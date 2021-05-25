@@ -39,7 +39,7 @@ function draw() {
   let gradient_y = centerY(gradient_height) + 70
 
   var grd = ctx.createLinearGradient(gradient_x, 0, gradient_x+gradient_width, 0);
-  let stops = 10
+  let stops = 50;
   for (let i = 0; i<=stops; i++) {
     //linearly map i from 400 to 650
     let wave = i*(250/stops) + 400
