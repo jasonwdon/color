@@ -19,7 +19,8 @@ export function initCanvas() {
 
   ctx = canvas.getContext('2d');
 	rc = rough.canvas(canvas);
-
+  TextBox({id:'rgba-text', text: wavelengthToColor(400)[0], x: 0, size: 50});
+  Slider({id: 'wired-slider', value: 400, min: 400, max: 650, w: 410, y:400})
 	setInterval(draw, DELAY);
 }
 
@@ -30,7 +31,7 @@ function draw() {
   let rect_width = 300
   let rect_height = 100
 
-  rc.rectangle(centerX(rect_width), centerY(rect_height)-40, rect_width,rect_height, {fill:rgba, fillStyle:'solid', roughness:1});
+  rc.rectangle(centerX(rect_width), centerY(rect_height)-40, rect_width,rect_height, {fill:rgba, fillStyle:'solid', roughness:2, seed:1});
 
   
   let gradient_width = 400;
@@ -104,4 +105,46 @@ function wavelengthToColor(wavelength) {
 
   let colorSpace = ["rgba(" + (R * 100) + "%," + (G * 100) + "%," + (B * 100) + "%, " + alpha + ")", R, G, B, alpha]
   return colorSpace;
+}
+
+function TextBox(config) {
+  let element = document.createElement("div");
+  element.className = "object";
+  element.classList.add("textbox");
+  element.innerHTML = config.text;
+  element.id = config.id
+  
+	if(config.x!==undefined) element.style.left = config.x+"px";
+	if(config.y!==undefined) element.style.top = config.y+"px";
+	if(config.w!==undefined) element.style.width = config.w+"px";
+	if(config.h!==undefined) element.style.height = config.h+"px";
+
+  if(config.rotation!==undefined) element.style.transform = "rotate("+config.rotation+"deg)";
+	if(config.align!==undefined) element.style.textAlign = config.align;
+	if(config.color!==undefined) element.style.color = config.color;
+	if(config.size!==undefined) element.style.fontSize = config.size;
+  element.addEventListener('change', () => {
+    innerHTML = "what"
+  });
+  document.getElementById("sandbox").appendChild(element);
+}
+
+function Slider(config) {
+  let element = document.createElement('wired-slider');
+  element.className = "object";
+  if(config.x!==undefined) element.style.left = config.x+"px";
+	if(config.y!==undefined) element.style.top = config.y+"px";
+	if(config.w!==undefined) element.style.width = config.w+"px";
+	if(config.h!==undefined) element.style.height = config.h+"px";
+  element.value = config.value;
+  element.min = config.min;
+  element.max = config.max;
+  element.id = config.id;
+  element.addEventListener('change', () => {
+    let wavelength = document.getElementById("wired-slider").value;
+    let rgba = wavelengthToColor(wavelength)[0];
+    document.getElementById('rgba-text').innerHTML = rgba;
+  });
+  document.getElementById("sandbox").appendChild(element);
+
 }
