@@ -34,14 +34,14 @@ function electromagnetic() {
   clearSandbox();
   
   let left = 50;
-  let width = 500;
-  TextBox({text: "When we’re older we learn that color is light reflecting off of objects at different wavelengths.", x: left, y: 50, w: width, size: '26px', align: 'left'});
+  let width = 450;
+  TextBox({text: "When we're older we learn that color is light reflecting off of objects at different wavelengths.", x: left, y: 50, w: width, size: '26px', align: 'left'});
   TextBox({text: "Harmless radiation that our eyeballs can interpret, visible light is a subset of the greater electromagnetic spectrum. ", 
-    x: left, y: 200, w: width, size:'26px', align: 'left'});
-  TextBox({text: "At different wavelengths, a different color is emitted", x: left, y:350, w: width-50, size:'26px', align: 'left'});
+    x: left, y: 200, w: width-20, size:'26px', align: 'left'});
+  TextBox({text: "At different wavelengths, a different color is emitted", x: left, y:350, w: width, size:'26px', align: 'left'});
 
-  TextBox({id: 'wavelength-text', text: "400nm", x: 710, y: 180, size:'22px'});
-  Slider({id: 'wired-slider', value: 400, min: 400, max: 650, w: 410, y:400, x: 530, onChange: () => {
+  TextBox({id: 'wavelength-text', text: "400nm", x: 710, y: 110, size:'22px'});
+  Slider({id: 'wired-slider', value: 400, min: 400, max: 650, w: 410, y:330, x: 530, onChange: () => {
     let wavelength = document.getElementById("wired-slider").value;
     document.getElementById('wavelength-text').innerHTML = wavelength+'nm';
   }})
@@ -66,13 +66,13 @@ function drawElectromagnetic(ctx, rc) {
   let rect_width = 300
   let rect_height = 100
 
-  rc.rectangle(centerX(rect_width)+240, centerY(rect_height)-40, rect_width,rect_height, {fill:rgba, fillStyle:'solid', roughness:2, seed:1});
+  rc.rectangle(centerX(rect_width)+240, centerY(rect_height)-110, rect_width,rect_height, {fill:rgba, fillStyle:'solid', roughness:2, seed:1});
 
   
   let gradient_width = 400;
   let gradient_height = 50;
   let gradient_x = centerX(gradient_width) + 240
-  let gradient_y = centerY(gradient_height) + 70
+  let gradient_y = centerY(gradient_height)
 
   var grd = ctx.createLinearGradient(gradient_x, 0, gradient_x+gradient_width, 0);
   let stops = 50;
