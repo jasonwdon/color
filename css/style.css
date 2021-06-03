@@ -1,0 +1,46 @@
+body {
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
+
+#sandbox {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 600px;
+  position: relative;
+  flex: 0 0 1000px;
+  /* border-style: solid; */
+}
+
+.object {
+	position: absolute;
+  animation: fadein 2s;
+}
+
+@keyframes fadein {
+  from {
+      opacity:0;
+  }
+  to {
+      opacity:1;
+  }
+}
+
+.textbox{
+  font-family:Gaegu;
+}
+
+.next-button {
+  left: 700px;
+  top: 500px;
+  font-size: 30px;
+}
+
+.back-button {
+  left: 200px;
+  top: 500px;
+  font-size: 30px;
+}
