@@ -44,8 +44,8 @@ export function wavelengthToColor(wavelength) {
 }
 
 // Because JQuery is for the weak
-export function clearSandbox() {
-  clearInterval();
+export function clearSandbox(interval) {
+  clearInterval(interval);
   let sandbox = document.getElementById('sandbox');
   while (sandbox.childElementCount > 0) {
     let child = sandbox.lastElementChild;

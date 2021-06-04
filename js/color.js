@@ -8,9 +8,13 @@ const WIDTH = 900;
 const HEIGHT = 500;
 const DELAY = 100;
 
+// Global interval because I'm not clever enough
+let interval=null;
+
+//start here
 document.addEventListener("DOMContentLoaded", init);
 function init() {
-  clearSandbox();
+  clearSandbox(interval);
 
   TextBox({id:'main-title', text:'Color is Made Up', y:200, size: '75px'})
   Button({text: "Begin", size: '30px', y:350, onClick: intro})
@@ -20,7 +24,7 @@ function init() {
 }
 
 function intro() {
-  clearSandbox();
+  clearSandbox(interval);
 
   let left = 125;
   TextBox({text: "In 2020, I tried to pick a color palette for a startup concept", x: left, y: 120, size: '30px', align: 'left'});
@@ -31,7 +35,7 @@ function intro() {
 }
 
 function ryb() {
-  clearSandbox();
+  clearSandbox(interval);
 
   let left = 50;
   let width = 480;
@@ -69,7 +73,7 @@ function ryb() {
 
 
 function electromagnetic() {
-  clearSandbox();
+  clearSandbox(interval);
   
   let left = 50;
   let width = 430;
@@ -91,7 +95,7 @@ function electromagnetic() {
   let ctx = canvas.getContext('2d');
 	let rc = rough.canvas(canvas);
   document.getElementById("sandbox").appendChild(canvas);
-	setInterval(drawElectromagnetic.bind(null, ctx, rc), DELAY);
+	interval = setInterval(drawElectromagnetic.bind(null, ctx, rc), DELAY);
 
   Button({text: "BACK", class: 'back-button', onClick: ryb})
   Button({text: "NEXT", class: 'next-button', onClick: electromagnetic})
@@ -107,7 +111,6 @@ function drawElectromagnetic(ctx, rc) {
 
   rc.rectangle(centerX(rect_width)+240, centerY(rect_height)-110, rect_width,rect_height, {fill:rgba, fillStyle:'solid', roughness:2, seed:1});
 
-  
   let gradient_width = 400;
   let gradient_height = 50;
   let gradient_x = centerX(gradient_width) + 240
