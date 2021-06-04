@@ -33,6 +33,7 @@ canvas {
 	position: absolute;
   animation: fadein 1s;
   animation-timing-function: ease-in;
+  transition: left 1s ease-out 0s;
 }
 
 @keyframes fadein {

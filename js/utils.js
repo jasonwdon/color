@@ -52,3 +52,8 @@ export function clearSandbox(interval) {
     sandbox.removeChild(child);
   }
 }
+
+export function removeById(id) {
+  let element = document.getElementById(id);
+  element.parentNode.removeChild(element);
+}
