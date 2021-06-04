@@ -22,26 +22,64 @@ function init() {
 function intro() {
   clearSandbox();
 
-  let left = 100;
+  let left = 125;
   TextBox({text: "In 2020, I tried to pick a color palette for a startup concept", x: left, y: 120, size: '30px', align: 'left'});
   TextBox({text: "I got distracted and the startup fell apart", x: left, y: 220, size:'30px', align: 'left'});
-  TextBox({text: "Here's what I learned about <b>color</b>", x: left, y:320, size:'30px', align: 'left'});
+  TextBox({text: "Here's what I learned about <b style='color:blue'>c</b><b style='color:green'>o</b><b style='color:yellow'>l</b><b style='color:orange'>o</b><b style='color:red'>r</b>", x: left, y:320, size:'30px', align: 'left'});
   Button({text: "BACK", class: 'back-button', onClick: init})
+  Button({text: "NEXT", class: 'next-button', onClick: ryb})
+}
+
+function ryb() {
+  clearSandbox();
+
+  let left = 50;
+  let width = 480;
+  TextBox({text: 
+    "In elementary school, we learn that there are 3 primary colors: <b style='color:red'>Red</b>, <b style='color:yellow'>Yellow</b>, <b style='color:blue'>Blue</b>.<br><br>" + 
+    "We can mix them in pairs to get our secondary colors, mix all of them to get black/brown, and mix none of them for white.<br><br>"+ 
+    "Why Mrs. Johnson?<br><br>" +
+    "Oh, it'll make sense when you're older.", x: left, y: 50, w: width, size: '26px', align: 'left'});
+
+  //draw interactive
+  let canvas = document.createElement('canvas');
+  canvas.width = WIDTH;
+  canvas.height= HEIGHT;
+  let ctx = canvas.getContext('2d');
+  ctx.globalCompositeOperation='multiply';
+  let rc = rough.canvas(canvas);
+
+  //don't need setinterval because this is static
+  let diameter = 100;
+  rc.circle(centerX(diameter)+300, centerY(diameter)-0.866*100-20, diameter, {fill:'rgba(255,0,0,1)', fillStyle:'solid', strokeWidth: 2, seed:1});
+  rc.circle(centerX(diameter)+400, centerY(diameter)+70, diameter, {fill:'rgba(255,255,0,1)', fillStyle:'solid', strokeWidth: 2, seed:1});
+  rc.circle(centerX(diameter)+200, centerY(diameter)+70, diameter, {fill:'rgba(0,0,255,1)', fillStyle:'solid', strokeWidth: 2, seed:1});
+
+  diameter = 50;
+  rc.circle(centerX(diameter)+200+20, centerY(diameter)-(0.866*50), diameter, {fill:'rgba(128,0,128,1)', fillStyle:'solid', strokeWidth: 2, seed:1});
+  rc.circle(centerX(diameter)+350-20, centerY(diameter)-(0.866*50), diameter, {fill:'rgba(255,165,0,1)', fillStyle:'solid', strokeWidth: 2, seed:1});
+  rc.circle(centerX(diameter)+275, centerY(diameter)+50, diameter, {fill:'rgba(0,128,0,1)', fillStyle:'solid', strokeWidth: 2, seed:1});
+  rc.circle(centerX(diameter)+275, centerY(diameter)-20, diameter, {fill:'rgba(0,0,0,1)', fillStyle:'solid', strokeWidth: 2, seed:1});
+
+  document.getElementById("sandbox").appendChild(canvas);
+
+  Button({text: "BACK", class: 'back-button', onClick: intro})
   Button({text: "NEXT", class: 'next-button', onClick: electromagnetic})
 }
+
 
 function electromagnetic() {
   clearSandbox();
   
   let left = 50;
-  let width = 450;
-  TextBox({text: "When we're older we learn that color is light reflecting off of objects at different wavelengths.", x: left, y: 50, w: width, size: '26px', align: 'left'});
-  TextBox({text: "Harmless radiation that our eyeballs can interpret, visible light is a subset of the greater electromagnetic spectrum. ", 
-    x: left, y: 200, w: width-20, size:'26px', align: 'left'});
-  TextBox({text: "At different wavelengths, a different color is emitted", x: left, y:350, w: width, size:'26px', align: 'left'});
+  let width = 430;
+  TextBox({text: 
+    "When we're older we learn that color is light reflecting off of objects at different intensities.<br><br>" + 
+    "Our eyes interpret this light and send signals to the brain.<br><br>" + 
+    "At different wavelengths, we see different colors.", x: left, y: 50, w: width, size: '26px', align: 'left'});
 
   TextBox({id: 'wavelength-text', text: "400nm", x: 710, y: 110, size:'22px'});
-  Slider({id: 'wired-slider', value: 400, min: 400, max: 650, w: 410, y:330, x: 530, onChange: () => {
+  Slider({id: 'wired-slider', value: 400, min: 400, max: 650, w: 410, y:330, x: 535, onChange: () => {
     let wavelength = document.getElementById("wired-slider").value;
     document.getElementById('wavelength-text').innerHTML = wavelength+'nm';
   }})
@@ -55,9 +93,10 @@ function electromagnetic() {
   document.getElementById("sandbox").appendChild(canvas);
 	setInterval(drawElectromagnetic.bind(null, ctx, rc), DELAY);
 
-  Button({text: "BACK", class: 'back-button', onClick: intro})
+  Button({text: "BACK", class: 'back-button', onClick: ryb})
   Button({text: "NEXT", class: 'next-button', onClick: electromagnetic})
 }
+
 //canvas context, roughjs canvas object
 function drawElectromagnetic(ctx, rc) {
   clear(ctx);
@@ -93,6 +132,5 @@ function centerY(object_height) {
 }
 
 function clear(ctx) {
-	ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-	ctx.fillRect(0,0,WIDTH,HEIGHT);
+  ctx.clearRect(0,0,WIDTH,HEIGHT);
 }

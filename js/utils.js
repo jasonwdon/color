@@ -37,7 +37,7 @@ export function wavelengthToColor(wavelength) {
   }
 
   // make alpha a little softer for aesthetics
-  let alpha = 0.75;
+  let alpha = 0.85;
 
   let colorSpace = ["rgba(" + (R * 100) + "%," + (G * 100) + "%," + (B * 100) + "%, " + alpha + ")", R, G, B, alpha]
   return colorSpace;
