@@ -73,15 +73,11 @@ function mixingWavelengths(rc, ctx, interval) {
   "<b style='color:red'>Red</b> + <b style='color:yellow'>Yellow</b> = <b style='color:orange'>Orange</b><br>" + 
   "<b style='color:blue'>Blue</b> + <b style='color:yellow'>Yellow</b> = <b style='color:lime'>Green</b><br>" +
   "<b style='color:red'>Red</b> + <b style='color:blue'>Blue</b> = <b style='color:purple'>Purple</b>", x: left+30, y: 300, w: width, size: '26px', align: 'left'});
-  setTimeout(() => {
-    TextBox({text: "&#9989;", x: left+300, y: 300, size: '26px', align: 'left'});
-  },3000);
-  setTimeout(() => {
-    TextBox({text: "&#9989;", x: left+295, y: 335, size: '26px', align: 'left'});
-  },4500);
-  setTimeout(() => {
-    TextBox({text: "&#10060;", x: left+265, y: 368, size: '26px', align: 'left'});
-  },6000);
+  
+  TextBox({text: "&#9989;", x: left+300, y: 300, size: '26px', align: 'left', class:'delay3'});
+  TextBox({text: "&#9989;", x: left+295, y: 335, size: '26px', align: 'left', class:'delay4p5'});
+  TextBox({text: "&#10060;", x: left+265, y: 368, size: '26px', align: 'left', class:'delay6'});
+
 }
 
 function drawMixingWavelengths(ctx, rc) {

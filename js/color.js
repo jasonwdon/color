@@ -1,8 +1,8 @@
 //import { annotate } from 'https://unpkg.com/rough-notation?module';
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox, Button} from './components.js';
+import {Button, RadioButton} from './components.js';
 import {clearSandbox} from './utils.js';
-import {IntroSlide, RYBSlide, ElectromagneticSlide} from './slides/AllSlides.js';
+import {Title, IntroSlide, RYBSlide, ElectromagneticSlide} from './slides/AllSlides.js';
 
 // Global Constants
 const WIDTH = 900;
@@ -13,33 +13,37 @@ const HEIGHT = 500;
 let interval={interval:null};
 
 //start here
-document.addEventListener("DOMContentLoaded", showSlide);
+document.addEventListener("DOMContentLoaded", init);
 
 let slideIndex = 0;
 let slides = [Title, IntroSlide, RYBSlide, ElectromagneticSlide]
-function prevSlide() {
-  if (slideIndex > 0) slideIndex--;
-  showSlide();
+
+function init() {
+  //create nav bar
+  for (let i = 0; i < 1; i++) {
+    RadioButton({x: 500+i*50, w: 100, onClick: showSlide.bind(null, i), parent:'body'})
+  }
+
+  //show title slide
+  showSlide(0);
 }
-function nextSlide() {
-  if (slideIndex < slides.length - 1) slideIndex++;
-  showSlide();
-}
-function showSlide() {
+
+function showSlide(i) {
+  //clear the previous slide
   clearSandbox(interval);
 
-  //set up
+  //set up canvas 
   let canvas = document.createElement('canvas');
   canvas.width = WIDTH;
   canvas.height= HEIGHT;
   let ctx = canvas.getContext('2d');
-  ctx.globalCompositeOperation='multiply';
   let rc = rough.canvas(canvas);
   document.getElementById("sandbox").appendChild(canvas);
 
+  //display slide by calling function
+  slides[i](rc, ctx, interval);
 
-  slides[slideIndex](rc, ctx, interval);
-
+  //show nav buttons
   if (slideIndex === 0) {
     Button({text: "Begin", size: '30px', y:350, onClick: nextSlide})
   } else {
@@ -48,6 +52,12 @@ function showSlide() {
   }
 }
 
-function Title() {
-  TextBox({id:'main-title', text:'Color is Made Up', y:200, size: '75px'})
+function prevSlide() {
+  if (slideIndex > 0) slideIndex--;
+  showSlide(slideIndex);
+}
+
+function nextSlide() {
+  if (slideIndex < slides.length - 1) slideIndex++;
+  showSlide(slideIndex);
 }

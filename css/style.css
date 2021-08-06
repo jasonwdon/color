@@ -31,8 +31,10 @@ canvas {
 
 .object {
 	position: absolute;
+  opacity: 0;
   animation: fadein 1s;
   animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
   transition: left 1s ease-out 0s;
 }
 
@@ -43,6 +45,16 @@ canvas {
   to {
       opacity:1;
   }
+}
+
+.delay3 {
+  animation-delay: 3s;
+}
+.delay4p5 {
+  animation-delay: 4.5s;
+}
+.delay6 {
+  animation-delay: 6s;
 }
 
 .textbox{

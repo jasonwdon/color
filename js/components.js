@@ -63,3 +63,23 @@ export function Button(config) {
   
   document.getElementById("sandbox").appendChild(element);
 }
+
+export function RadioButton(config) {
+  let element = document.createElement('wired-radio');
+  element.className = "object";
+
+  //required
+  element.addEventListener('change', config.onClick);
+
+  //optional
+  if(config.class!==undefined) element.classList.add(config.class);
+  if(config.id!==undefined) element.id = config.id;
+  if(config.x!==undefined) element.style.left = config.x+"px";
+	if(config.y!==undefined) element.style.top = config.y+"px";
+	if(config.w!==undefined) element.style.width = config.w+"px";
+	if(config.h!==undefined) element.style.height = config.h+"px";
+
+  //choose which parent to append to
+  if(config.parent==='body')document.body.appendChild(element);
+  else document.getElementById("sandbox").appendChild(element);
+}
