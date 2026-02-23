@@ -1,51 +1,53 @@
-//import { annotate } from 'https://unpkg.com/rough-notation?module';
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button, RadioButton} from './components.js';
-import {clearSandbox} from './utils.js';
-import {Title, IntroSlide, RYBSlide, ElectromagneticSlide} from './slides/AllSlides.js';
+import {Button} from './components.js';
+import {clearSandbox, setDimensions} from './utils.js';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile} from './slides/AllSlides.js';
 
-// Global Constants
-const WIDTH = 900;
-const HEIGHT = 500;
+let interval = {id: null};
+let slideIndex = 0;
 
-// Global interval because I'm not clever enough
-// also object so that we can mutate it's property by reference
-let interval={interval:null};
+const desktopSlides = [TitleDesktop, RYBDesktop, ElectromagneticDesktop];
+const mobileSlides  = [TitleMobile,  RYBMobile,  ElectromagneticMobile];
 
-//start here
 document.addEventListener("DOMContentLoaded", init);
 
-let slideIndex = 0;
-let slides = [Title, IntroSlide, RYBSlide, ElectromagneticSlide]
+function getLayout() {
+  const isMobile = window.matchMedia('(max-width: 480px)').matches;
+  const width  = isMobile ? window.innerWidth : 900;
+  const height = isMobile ? window.innerHeight - 100 : 500;
+  const slides = isMobile ? mobileSlides : desktopSlides;
+  return { width, height, slides };
+}
 
 function init() {
-  //create nav bar
-  for (let i = 0; i < 1; i++) {
-    RadioButton({x: 500+i*50, w: 100, onClick: showSlide.bind(null, i), parent:'body'})
-  }
+  const hash = window.location.hash;
+  slideIndex = hash ? Math.min(parseInt(hash.slice(1)), desktopSlides.length - 1) : 0;
+  showSlide(slideIndex);
 
-  //show title slide
-  showSlide(0);
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => showSlide(slideIndex), 150);
+  });
 }
 
 function showSlide(i) {
-  //clear the previous slide
+  const { width, height, slides } = getLayout();
+  setDimensions(width, height);
+  window.location.hash = i;
   clearSandbox(interval);
 
-  //set up canvas 
   let canvas = document.createElement('canvas');
-  canvas.width = WIDTH;
-  canvas.height= HEIGHT;
+  canvas.width = width;
+  canvas.height = height;
   let ctx = canvas.getContext('2d');
   let rc = rough.canvas(canvas);
   document.getElementById("sandbox").appendChild(canvas);
 
-  //display slide by calling function
   slides[i](rc, ctx, interval);
 
-  //show nav buttons
   if (slideIndex === 0) {
-    Button({text: "Begin", size: '30px', y:350, onClick: nextSlide})
+    Button({text: "Begin", size: '30px', y: Math.round(height * 0.7), onClick: nextSlide})
   } else {
     Button({text: "BACK", class: 'back-button', onClick: prevSlide})
     Button({text: "NEXT", class: 'next-button', onClick: nextSlide})
@@ -58,6 +60,6 @@ function prevSlide() {
 }
 
 function nextSlide() {
-  if (slideIndex < slides.length - 1) slideIndex++;
+  if (slideIndex < desktopSlides.length - 1) slideIndex++;
   showSlide(slideIndex);
 }

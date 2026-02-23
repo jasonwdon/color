@@ -29,6 +29,30 @@ canvas {
   /* border-style: solid; */
 }
 
+@media (max-width: 480px) {
+  body {
+    padding-top: 0;
+  }
+  #sandbox {
+    flex: 0 0 100vw;
+    height: 100svh;
+  }
+  .next-button {
+    left: auto !important;
+    right: 20px;
+    top: auto !important;
+    bottom: 20px;
+  }
+  .back-button {
+    left: 20px !important;
+    top: auto !important;
+    bottom: 20px;
+  }
+  .textbox {
+    text-align: center;
+  }
+}
+
 .object {
 	position: absolute;
   opacity: 0;
