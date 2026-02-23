@@ -13,12 +13,12 @@ const DESKTOP_L = {
 };
 
 const MOBILE_L = {
-  textX: 15,  textY: 20,  textW: 360, textSize: '18px',
-  w1LabelX: 170, w1LabelY: 318, w1LabelSize: '18px',
+  textX: 15,  textY: 20,  textW: 360, textSize: '22px',
+  w1LabelX: 170, w1LabelY: 318, w1LabelSize: '22px',
   slider1X: 15, slider1Y: 420, slider1W: 360,
   rectX: 130, rectY: 240, rectW: 130, rectH: 75,
   gradX: 15,  gradY: 345, gradW: 360, gradH: 40,
-  noteX: 15, noteY: 480, noteW: 360, noteSize: '12px',
+  noteY: 480, noteSize: '14px',
 };
 
 export function ElectromagneticDesktop(rc, ctx, interval) {
@@ -46,8 +46,8 @@ function setupEM(rc, ctx, interval, L) {
       document.getElementById('wavelength1').innerHTML = wavelength + 'nm';
     }});
 
-  TextBox({text: "* all wavelengths above 650nm appear as the same red on modern displays",
-    x: L.noteX, y: L.noteY, w: L.noteW, size: L.noteSize, align: 'left'});
+  TextBox({text: "*wavelengths above 650nm are indistinguishable on screens",
+    x: L.noteX, y: L.noteY, w: L.noteW, size: L.noteSize, align: 'center'});
 }
 
 function drawSpectrumGradient(ctx, rc, L) {

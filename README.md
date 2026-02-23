@@ -31,6 +31,7 @@ What you know about colors was a simplification made for the kindergarten mind t
 
 Interactables:
 - Slider to show how wavelength determines color
+- Slider to show how wavelength affects the three cones
 - RGB mixing to create colors
 - RYB / CMY — cyan, yellow, magenta
 - Show how white is created, create off-white

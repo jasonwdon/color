@@ -18,6 +18,7 @@ export function TextBox(config) {
   if (config.color !== undefined) element.style.color = config.color;
   if (config.size !== undefined) element.style.fontSize = config.size;
   if (config.wordSpacing !== undefined) element.style.wordSpacing = config.wordSpacing;
+  if (config.lineHeight !== undefined) element.style.lineHeight = config.lineHeight;
 
   document.getElementById("sandbox").appendChild(element);
 }
