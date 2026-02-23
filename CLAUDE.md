@@ -35,7 +35,16 @@ This is a vanilla JS slide-based interactive about color theory. No frameworks, 
 - `css/style.css` — layout (flexbox), `.delay3` / `.delay4p5` / `.delay6` animation-delay classes, absolute positioning within `#sandbox`
 
 **Canvas vs DOM coordinate offset:**
-The canvas (900×500 desktop, `innerWidth × innerHeight-100` mobile) is centered via flexbox inside `#sandbox` (1000×600 desktop, `100vw × 100svh` mobile). This creates a 50px offset on each side. Canvas coordinate `(x, y)` maps to sandbox DOM position `(x+50, y+50)`. Keep this in mind when aligning absolutely-positioned DOM elements with canvas drawings.
+The canvas (900×500 desktop, `innerWidth × innerHeight-100` mobile) is centered via flexbox inside `#sandbox` (1000×600 desktop, `100vw × 100svh` mobile). On desktop this creates a **50px offset on all sides**: canvas coord `(x, y)` = sandbox DOM coord `(x+50, y+50)`. On mobile the canvas is full width so the **horizontal offset is 0** (only the vertical 50px offset applies). Keep this in mind when aligning absolutely-positioned DOM elements with canvas drawings.
+
+**Dynamic mobile layout:**
+When layout values need to depend on screen size (e.g. centering a graph), compute them in the mobile export function rather than hardcoding in the layout object:
+```js
+export function MySlideMobile(rc, ctx, interval) {
+  const centeredX = Math.round((window.innerWidth - MOBILE_L.itemW) / 2) + 50; // +50 cancels the -50 in draw fn
+  setupSlide(rc, ctx, interval, {...MOBILE_L, itemX: centeredX});
+}
+```
 
 **Adding a new slide:**
 1. Create `js/slides/mySlide.js` exporting a function `(rc, ctx, interval) => {}`
@@ -46,7 +55,7 @@ The canvas (900×500 desktop, `innerWidth × innerHeight-100` mobile) is centere
 ```js
 Button({ text: 'Click me', x: 100, y: 50, onClick: () => {} })
 Slider({ min: 380, max: 780, value: 580, x: 50, y: 200, onChange: (val) => {} })
-TextBox({ text: 'Hello', x: 50, y: 100, w: 400, size: '24px', align: 'left', wordSpacing: '-4px' })
+TextBox({ text: 'Hello', x: 50, y: 100, w: 400, size: '24px', align: 'left', wordSpacing: '-4px', lineHeight: '1.2' })
 ```
 All config properties except `text` are optional; components use absolute positioning within `#sandbox`. Omitting `x` on a component lets the flexbox `align-items: center` on `#sandbox` center it horizontally.
 
@@ -55,3 +64,24 @@ All config properties except `text` are optional; components use absolute positi
 interval.id = setInterval(drawFrame, 100);
 // clearSandbox() in utils.js will call clearInterval(interval.id)
 ```
+
+**Canvas interaction pattern** (click/drag on canvas regions):
+Use pointer events + `setPointerCapture` so dragging works even when the pointer leaves the element. The canvas is removed from the DOM on navigation, so no manual cleanup is needed.
+```js
+let dragging = false;
+ctx.canvas.addEventListener('pointerdown', (e) => {
+  const rect = ctx.canvas.getBoundingClientRect();
+  const scaleX = ctx.canvas.width / rect.width;
+  const cx = (e.clientX - rect.left) * scaleX;
+  // check bounds, then:
+  dragging = true;
+  ctx.canvas.setPointerCapture(e.pointerId);
+});
+ctx.canvas.addEventListener('pointermove', (e) => { if (dragging) { /* update */ } });
+ctx.canvas.addEventListener('pointerup',     () => { dragging = false; });
+ctx.canvas.addEventListener('pointercancel', () => { dragging = false; });
+```
+
+**`wavelengthToColor` notes:**
+- Uses constant alpha (0.85) — no brightness falloff at spectrum edges
+- All wavelengths above ~645nm return the same pure red on an sRGB display; the gradient bar caps at 650nm for this reason

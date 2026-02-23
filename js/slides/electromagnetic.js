@@ -4,7 +4,7 @@ import {wavelengthToColor, clearCanvas} from '../utils.js';
 const DELAY = 100;
 
 const DESKTOP_L = {
-  textX: 50,  textY: 50,  textW: 430, textSize: '26px',
+  textX: 50,  textY: 110, textW: 430, textSize: '26px',
   w1LabelX: 710, w1LabelY: 179, w1LabelSize: '22px',
   slider1X: 535, slider1Y: 330, slider1W: 410,
   rectX: 540,  rectY: 90,  rectW: 300, rectH: 100,
@@ -33,7 +33,7 @@ function setupEM(rc, ctx, interval, L) {
   interval.id = setInterval(drawElectromagnetic.bind(null, ctx, rc, L), DELAY);
 
   TextBox({id: 'electromagnetic-text', text:
-    "When we're older we learn that color is light reflecting off of objects at different intensities.<br><br>" +
+    "Later on, we learn that color is light reflecting off of objects at different intensities.<br><br>" +
     "Our eyes interpret this light and send signals to the brain.<br><br>" +
     "At different wavelengths, we see different colors.",
     x: L.textX, y: L.textY, w: L.textW, size: L.textSize, align: 'left'});
@@ -48,6 +48,37 @@ function setupEM(rc, ctx, interval, L) {
 
   TextBox({text: "*wavelengths above 650nm are indistinguishable on screens",
     x: L.noteX, y: L.noteY, w: L.noteW, size: L.noteSize, align: 'center'});
+
+  let dragging = false;
+
+  function updateWavelength(clientX) {
+    const rect = ctx.canvas.getBoundingClientRect();
+    const scaleX = ctx.canvas.width / rect.width;
+    const cx = Math.max(L.gradX, Math.min(L.gradX + L.gradW, (clientX - rect.left) * scaleX));
+    const wl = Math.round(400 + (cx - L.gradX) / L.gradW * 250);
+    document.getElementById('slider1').value = wl;
+    document.getElementById('wavelength1').innerHTML = wl + 'nm';
+  }
+
+  ctx.canvas.addEventListener('pointerdown', (e) => {
+    const rect = ctx.canvas.getBoundingClientRect();
+    const scaleX = ctx.canvas.width / rect.width;
+    const cx = (e.clientX - rect.left) * scaleX;
+    const cy = (e.clientY - rect.top)  * scaleX;
+    if (cx >= L.gradX && cx <= L.gradX + L.gradW &&
+        cy >= L.gradY && cy <= L.gradY + L.gradH) {
+      dragging = true;
+      ctx.canvas.setPointerCapture(e.pointerId);
+      updateWavelength(e.clientX);
+    }
+  });
+
+  ctx.canvas.addEventListener('pointermove', (e) => {
+    if (dragging) updateWavelength(e.clientX);
+  });
+
+  ctx.canvas.addEventListener('pointerup',     () => { dragging = false; });
+  ctx.canvas.addEventListener('pointercancel', () => { dragging = false; });
 }
 
 function drawSpectrumGradient(ctx, rc, L) {

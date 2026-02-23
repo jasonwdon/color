@@ -6,7 +6,7 @@ export function RYBDesktop(rc) {
   TextBox({text:
     "In elementary school, we learn that there are 3 primary colors: <b style='color:red'>Red</b>, <b style='color:yellow'>Yellow</b>, <b style='color:blue'>Blue</b>.<br><br>" +
     "We can mix them to get our secondary colors, mix all of them to get <b>black</b>/<b style='color:saddlebrown'>brown</b>, and the paper was <b style='color:white; background-color:black; padding: 0 4px; border-radius: 3px;'>white</b> to begin with.<br><br>" +
-    "It was good enough for second grade.", x: left, y: 50, w: width, size: '26px', align: 'left'});
+    "It was good enough for second grade.", x: left, y: 100, w: width, size: '26px', align: 'left'});
 
   let diameter = 100;
   rc.circle(700, 93.4, diameter, {fill: 'rgba(255,0,0,1)',   fillStyle: 'solid', strokeWidth: 2, seed: 1});
