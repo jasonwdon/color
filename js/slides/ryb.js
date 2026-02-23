@@ -30,14 +30,14 @@ export function RYBMobile(rc) {
 
   // primary circles — triangle in bottom half of canvas
   let diameter = 80;
-  rc.circle(195, 380, diameter, {fill: 'rgba(255,0,0,1)',   fillStyle: 'solid', strokeWidth: 2, seed: 1});
-  rc.circle(268, 505, diameter, {fill: 'rgba(255,255,0,1)', fillStyle: 'solid', strokeWidth: 2, seed: 1});
-  rc.circle(122, 505, diameter, {fill: 'rgba(0,0,255,1)',   fillStyle: 'solid', strokeWidth: 2, seed: 1});
+  rc.circle(195, 345, diameter, {fill: 'rgba(255,0,0,1)',   fillStyle: 'solid', strokeWidth: 2, seed: 1});
+  rc.circle(268, 470, diameter, {fill: 'rgba(255,255,0,1)', fillStyle: 'solid', strokeWidth: 2, seed: 1});
+  rc.circle(122, 470, diameter, {fill: 'rgba(0,0,255,1)',   fillStyle: 'solid', strokeWidth: 2, seed: 1});
 
   // secondary circles — midpoints of the triangle edges
   diameter = 40;
-  rc.circle(158, 442, diameter, {fill: 'rgba(128,0,128,1)', fillStyle: 'solid', strokeWidth: 2, seed: 1}); // purple
-  rc.circle(232, 442, diameter, {fill: 'rgba(255,165,0,1)', fillStyle: 'solid', strokeWidth: 2, seed: 1}); // orange
-  rc.circle(195, 510, diameter, {fill: 'rgba(0,128,0,1)',   fillStyle: 'solid', strokeWidth: 2, seed: 1}); // green
-  rc.circle(195, 462, diameter, {fill: 'rgba(0,0,0,1)',     fillStyle: 'solid', strokeWidth: 2, seed: 1}); // black (center)
+  rc.circle(158, 407, diameter, {fill: 'rgba(128,0,128,1)', fillStyle: 'solid', strokeWidth: 2, seed: 1}); // purple
+  rc.circle(232, 407, diameter, {fill: 'rgba(255,165,0,1)', fillStyle: 'solid', strokeWidth: 2, seed: 1}); // orange
+  rc.circle(195, 475, diameter, {fill: 'rgba(0,128,0,1)',   fillStyle: 'solid', strokeWidth: 2, seed: 1}); // green
+  rc.circle(195, 427, diameter, {fill: 'rgba(0,0,0,1)',     fillStyle: 'solid', strokeWidth: 2, seed: 1}); // black (center)
 }

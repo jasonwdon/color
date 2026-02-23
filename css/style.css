@@ -14,7 +14,7 @@ b {
 }
 
 canvas {
-  animation: fadein 1s;
+  animation: fadein 0.4s;
   animation-timing-function: ease-in;
 }
 
@@ -56,7 +56,7 @@ canvas {
 .object {
 	position: absolute;
   opacity: 0;
-  animation: fadein 1s;
+  animation: fadein 0.4s;
   animation-timing-function: ease-in;
   animation-fill-mode: forwards;
   transition: left 1s ease-out 0s;
