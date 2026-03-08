@@ -1,13 +1,13 @@
 import rough from 'https://unpkg.com/roughjs?module';
 import {Button} from './components.js';
 import {clearSandbox, setDimensions} from './utils.js';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile} from './slides/AllSlides.js';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ColorMixerDesktop, ColorMixerMobile} from './slides/AllSlides.js';
 
 let interval = {id: null};
 let slideIndex = 0;
 
-const desktopSlides = [TitleDesktop, RYBDesktop, ElectromagneticDesktop, ConesDesktop];
-const mobileSlides  = [TitleMobile,  RYBMobile,  ElectromagneticMobile,  ConesMobile];
+const desktopSlides = [TitleDesktop, RYBDesktop, ElectromagneticDesktop, ConesDesktop, ColorMixerDesktop];
+const mobileSlides  = [TitleMobile,  RYBMobile,  ElectromagneticMobile,  ConesMobile,  ColorMixerMobile];
 
 document.addEventListener("DOMContentLoaded", init);
 
