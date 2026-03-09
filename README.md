@@ -1,5 +1,5 @@
 # Color
-An interactive about colors.
+An interactive about colors. https://jasonwdon.github.io/color
 
 ## Run it
 
