@@ -1,233 +1,175 @@
-import {Slider} from '../components.js';
-import {clearCanvas} from '../utils.js';
+import {TextBox, Button} from '../components.js';
 
-// RYB → RGB via trilinear interpolation on a cube.
-// Each index is a bitmask: bit2=R, bit1=Y, bit0=B (all 0→1 range).
-const RYB_CUBE = [
-  [1.000, 1.000, 1.000], // (0,0,0) → white
-  [1.000, 0.000, 0.000], // (1,0,0) → red
-  [1.000, 1.000, 0.000], // (0,1,0) → yellow
-  [1.000, 0.500, 0.000], // (1,1,0) → orange
-  [0.163, 0.373, 0.600], // (0,0,1) → blue
-  [0.500, 0.000, 0.500], // (1,0,1) → purple
-  [0.000, 0.660, 0.200], // (0,1,1) → green
-  [0.100, 0.094, 0.000], // (1,1,1) → dark brown
+// ── Color definitions ──────────────────────────────────────────────────────
+
+const RGB_COLORS = [
+  { label: 'R', r: 255, g: 0,   b: 0   },
+  { label: 'G', r: 0,   g: 255, b: 0   },
+  { label: 'B', r: 0,   g: 0,   b: 255 },
 ];
 
-function rybToRgb(r, y, b) {
-  const w = [
-    (1-r)*(1-y)*(1-b), r*(1-y)*(1-b),
-    (1-r)*y*(1-b),     r*y*(1-b),
-    (1-r)*(1-y)*b,     r*(1-y)*b,
-    (1-r)*y*b,         r*y*b,
-  ];
-  let R = 0, G = 0, B = 0;
-  for (let i = 0; i < 8; i++) {
-    R += w[i] * RYB_CUBE[i][0];
-    G += w[i] * RYB_CUBE[i][1];
-    B += w[i] * RYB_CUBE[i][2];
+// RYB primaries rendered as their approximate RGB display values
+const RYB_COLORS = [
+  { label: 'R', r: 220, g: 20,  b: 20  },
+  { label: 'Y', r: 240, g: 200, b: 0   },
+  { label: 'B', r: 20,  g: 60,  b: 180 },
+];
+
+// ── Splotch animation ──────────────────────────────────────────────────────
+
+const SPLOTCH_DURATION = 400; // ms
+const MAX_RADIUS = 17;
+const SPLOTCH_ALPHA = 0.55;
+
+function easeOut(t) { return 1 - (1 - t) * (1 - t); }
+
+// Returns a cleanup function
+function animateSplotch(canvas, color, blendMode, onDone) {
+  const ctx = canvas.getContext('2d');
+  const x = 40 + Math.random() * (canvas.width - 80);
+  const y = 30 + Math.random() * (canvas.height - 60);
+  const start = performance.now();
+
+  // Snapshot canvas before animation so each frame restores to this state,
+  // preventing repeated blend operations from accumulating (e.g. multiply → black).
+  const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  // Slightly irregular shape via a few random offsets
+  const bumps = Array.from({length: 8}, () => 0.82 + Math.random() * 0.36);
+
+  let raf;
+  function frame(now) {
+    const t = Math.min((now - start) / SPLOTCH_DURATION, 1);
+    const r = easeOut(t) * MAX_RADIUS;
+
+    ctx.putImageData(snapshot, 0, 0);
+
+    ctx.save();
+    ctx.globalCompositeOperation = blendMode;
+    ctx.globalAlpha = SPLOTCH_ALPHA;
+    ctx.fillStyle = `rgb(${color.r},${color.g},${color.b})`;
+
+    ctx.beginPath();
+    const steps = bumps.length;
+    for (let i = 0; i <= steps; i++) {
+      const angle = (i / steps) * Math.PI * 2;
+      const radius = r * bumps[i % steps];
+      const px = x + Math.cos(angle) * radius;
+      const py = y + Math.sin(angle) * radius;
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    if (t < 1) {
+      raf = requestAnimationFrame(frame);
+    } else {
+      onDone();
+    }
   }
-  return [Math.round(R * 255), Math.round(G * 255), Math.round(B * 255)];
+  raf = requestAnimationFrame(frame);
+  return () => cancelAnimationFrame(raf);
 }
 
-function contrastColor(r, g, b) {
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? '#333' : '#eee';
+// ── Panel setup ────────────────────────────────────────────────────────────
+
+function makePanel(container, title, colors, blendMode, canvasW, canvasH, btnY, titleY, fontSize) {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:10px;`;
+
+  // Title
+  const titleEl = document.createElement('div');
+  titleEl.innerHTML = title;
+  titleEl.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};font-weight:bold;color:#222;text-align:center;`;
+  wrapper.appendChild(titleEl);
+
+  // Canvas
+  const canvas = document.createElement('canvas');
+  canvas.width  = canvasW;
+  canvas.height = canvasH;
+  const bgColor = blendMode === 'lighter' ? '#000' : '#fff';
+  canvas.style.cssText = `border:2px solid #aaa;border-radius:4px;background:${bgColor};display:block;`;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, canvasW, canvasH);
+  wrapper.appendChild(canvas);
+
+  // Buttons row
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = `display:flex;gap:12px;justify-content:center;`;
+
+  let cancelAnim = null;
+  colors.forEach(color => {
+    const btn = document.createElement('wired-button');
+    btn.className = 'object';
+    btn.innerHTML = color.label;
+    btn.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};color:rgb(${color.r},${color.g},${color.b});position:static;`;
+    btn.addEventListener('click', () => {
+      if (cancelAnim) cancelAnim();
+      cancelAnim = animateSplotch(canvas, color, blendMode, () => { cancelAnim = null; });
+    });
+    btnRow.appendChild(btn);
+  });
+
+  wrapper.appendChild(btnRow);
+
+  // Reset button
+  const reset = document.createElement('wired-button');
+  reset.className = 'object';
+  reset.innerHTML = 'reset';
+  reset.style.cssText = `font-family:Gaegu,cursive;font-size:16px;color:#888;position:static;`;
+  reset.addEventListener('click', () => {
+    if (cancelAnim) { cancelAnim(); cancelAnim = null; }
+    ctx.clearRect(0, 0, canvasW, canvasH);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvasW, canvasH);
+  });
+  wrapper.appendChild(reset);
+
+  container.appendChild(wrapper);
+  return wrapper;
 }
 
-// Desktop: two side-by-side panels separated by a vertical divider.
-// All canvas coords (subtract 50 from sandbox x and y on desktop).
-const DESKTOP_L = {
-  isMobile: false,
-  // canvas x extents per panel
-  cLeft: 15,
-  cRight: 465,
-  cPanelW: 415,
-  cDivX: 450,
-  // y positions (canvas)
-  cTitleY: 38,
-  cRY: 88,  cGY: 143, cBY: 198,
-  cSwatchY: 268, cSwatchH: 180,
-  // sandbox positions for DOM sliders (canvas + 50).
-  // labels drawn at canvas cLeft/cRight; sliders start 35px to the right.
-  sLX: 100,  sRX: 550,
-  sRY: 110, sGY: 165, sBY: 220,
-  sSliderW: 380,
-  labelSize: 22,
-  titleSize: 22,
-};
+// ── Desktop ────────────────────────────────────────────────────────────────
 
-// Mobile: two stacked panels separated by a horizontal divider.
-// On mobile: canvas x = sandbox x (no horizontal offset); canvas y = sandbox y − 50.
 export function ColorMixerDesktop(rc, ctx, interval) {
-  setupMixer(rc, ctx, DESKTOP_L);
+  const sandbox = document.getElementById('sandbox');
+
+  TextBox({
+    text: 'There are two ways to mix color.<br><br>' +
+          '<b>Additive</b> mixing (light): start with black, add colored light — R+G+B = white.<br><br>' +
+          '<b>Subtractive</b> mixing (paint): start with white, add pigment — each pigment absorbs light.',
+    x: 50, y: 60, w: 380, size: '22px', align: 'left', lineHeight: '1.35',
+  });
+
+  // Flex row to hold both panels, positioned in sandbox
+  const row = document.createElement('div');
+  row.style.cssText = `position:absolute;left:460px;top:50px;display:flex;gap:40px;align-items:flex-start;`;
+  sandbox.appendChild(row);
+
+  makePanel(row, 'Light mixing (additive)', RGB_COLORS, 'lighter',  180, 200, 0, 0, '20px');
+  makePanel(row, 'Paint mixing (subtractive)', RYB_COLORS, 'multiply', 180, 200, 0, 0, '20px');
 }
+
+// ── Mobile ─────────────────────────────────────────────────────────────────
 
 export function ColorMixerMobile(rc, ctx, interval) {
+  const sandbox = document.getElementById('sandbox');
   const W = window.innerWidth;
-  const H = window.innerHeight - 100;
-  const panelH = Math.floor(H / 2) - 10;
-  const divY   = panelH + 5;
 
-  // sandbox y = canvas y + 50
-  const L = {
-    isMobile: true,
-    cW: W, cH: H,
-    cLeft: 5, cRight: 5, cPanelW: W - 10,
-    cDivY: divY,
-    // top panel (RGB) — canvas y values
-    cTitleY:  22,
-    cRY:  60, cGY: 105, cBY: 150,
-    cSwatchY: 193, cSwatchH: panelH - 200,
-    // bottom panel (RYB) — canvas y values (offset by divY + gap)
-    cBotBase: divY + 10,
-    cBotTitleY: divY + 22,
-    cBotRY:  divY + 60, cBotGY: divY + 105, cBotBY: divY + 150,
-    cBotSwatchY: divY + 193, cBotSwatchH: H - (divY + 200),
-    // sandbox y for DOM sliders (canvas y + 50)
-    sLX: 35, sRX: 35, sSliderW: W - 45,
-    sRY:  60 + 50, sGY: 105 + 50, sBY: 150 + 50,
-    sBotRY: divY + 60 + 50, sBotGY: divY + 105 + 50, sBotBY: divY + 150 + 50,
-    labelSize: 19,
-    titleSize: 19,
-  };
-  setupMixer(rc, ctx, L);
-}
+  TextBox({
+    text: '<b>Additive</b> (light): start black, add R+G+B → white.<br>' +
+          '<b>Subtractive</b> (paint): start white, add pigment → absorbs light.',
+    x: 10, y: 55, w: W - 20, size: '20px', align: 'left', lineHeight: '1.3',
+  });
 
-function setupMixer(rc, ctx, L) {
-  const onChange = () => draw(rc, ctx, L);
-  Slider({id: 'mix-rgb-r', min: 0, max: 255, value: 128, x: L.sLX, y: L.sRY, w: L.sSliderW, onChange});
-  Slider({id: 'mix-rgb-g', min: 0, max: 255, value: 128, x: L.sLX, y: L.sGY, w: L.sSliderW, onChange});
-  Slider({id: 'mix-rgb-b', min: 0, max: 255, value: 128, x: L.sLX, y: L.sBY, w: L.sSliderW, onChange});
+  const panelW = Math.min(Math.floor((W - 30) / 2), 160);
 
-  const rybY = L.isMobile ? L.sBotRY : L.sRY;
-  const rybGY = L.isMobile ? L.sBotGY : L.sGY;
-  const rybBY = L.isMobile ? L.sBotBY : L.sBY;
-  const rybX  = L.isMobile ? L.sRX    : L.sRX;
-  Slider({id: 'mix-ryb-r', min: 0, max: 100, value: 0, x: rybX, y: rybY,  w: L.sSliderW, onChange});
-  Slider({id: 'mix-ryb-y', min: 0, max: 100, value: 0, x: rybX, y: rybGY, w: L.sSliderW, onChange});
-  Slider({id: 'mix-ryb-b', min: 0, max: 100, value: 0, x: rybX, y: rybBY, w: L.sSliderW, onChange});
+  const row = document.createElement('div');
+  row.style.cssText = `position:absolute;left:0;right:0;top:160px;display:flex;gap:10px;justify-content:center;align-items:flex-start;`;
+  sandbox.appendChild(row);
 
-  draw(rc, ctx, L);
-}
-
-function draw(rc, ctx, L) {
-  clearCanvas(ctx);
-
-  const rgbR = +document.getElementById('mix-rgb-r').value;
-  const rgbG = +document.getElementById('mix-rgb-g').value;
-  const rgbB = +document.getElementById('mix-rgb-b').value;
-  const rybR = document.getElementById('mix-ryb-r').value / 100;
-  const rybY = document.getElementById('mix-ryb-y').value / 100;
-  const rybBv = document.getElementById('mix-ryb-b').value / 100;
-  const [rR, rG, rB] = rybToRgb(rybR, rybY, rybBv);
-
-  if (L.isMobile) {
-    drawMobile(rc, ctx, L, rgbR, rgbG, rgbB, rR, rG, rB);
-  } else {
-    drawDesktop(rc, ctx, L, rgbR, rgbG, rgbB, rR, rG, rB);
-  }
-}
-
-function drawDesktop(rc, ctx, L, rgbR, rgbG, rgbB, rR, rG, rB) {
-  const {cLeft, cRight, cPanelW, cDivX, labelSize, titleSize} = L;
-
-  // Titles
-  ctx.font = `bold ${titleSize}px Gaegu`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#222';
-  ctx.fillText('Light mixing (RGB)', cLeft + cPanelW / 2, L.cTitleY);
-  ctx.fillText('Paint mixing (RYB)', cRight + cPanelW / 2, L.cTitleY);
-
-  // Slider labels
-  ctx.textAlign = 'left';
-  ctx.font = `${labelSize}px Gaegu`;
-  ctx.fillStyle = '#cc2200'; ctx.fillText('R', cLeft + 4, L.cRY);
-  ctx.fillStyle = '#228822'; ctx.fillText('G', cLeft + 4, L.cGY);
-  ctx.fillStyle = '#0033cc'; ctx.fillText('B', cLeft + 4, L.cBY);
-
-  ctx.fillStyle = '#cc2200'; ctx.fillText('R', cRight + 4, L.cRY);
-  ctx.fillStyle = '#998800'; ctx.fillText('Y', cRight + 4, L.cGY);
-  ctx.fillStyle = '#0033cc'; ctx.fillText('B', cRight + 4, L.cBY);
-
-  // Vertical divider
-  ctx.save();
-  ctx.setLineDash([5, 5]);
-  ctx.beginPath();
-  ctx.moveTo(cDivX, 8);
-  ctx.lineTo(cDivX, ctx.canvas.height - 8);
-  ctx.strokeStyle = '#bbb';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.restore();
-
-  // RGB swatch
-  ctx.fillStyle = `rgb(${rgbR},${rgbG},${rgbB})`;
-  ctx.fillRect(cLeft, L.cSwatchY, cPanelW, L.cSwatchH);
-  rc.rectangle(cLeft, L.cSwatchY, cPanelW, L.cSwatchH, {roughness: 1.2, seed: 1});
-  ctx.font = `${labelSize - 2}px Gaegu`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = contrastColor(rgbR, rgbG, rgbB);
-  ctx.fillText(`rgb(${rgbR}, ${rgbG}, ${rgbB})`, cLeft + cPanelW / 2, L.cSwatchY + L.cSwatchH / 2 + 7);
-
-  // RYB swatch
-  ctx.fillStyle = `rgb(${rR},${rG},${rB})`;
-  ctx.fillRect(cRight, L.cSwatchY, cPanelW, L.cSwatchH);
-  rc.rectangle(cRight, L.cSwatchY, cPanelW, L.cSwatchH, {roughness: 1.2, seed: 2});
-  ctx.fillStyle = contrastColor(rR, rG, rB);
-  ctx.fillText(`rgb(${rR}, ${rG}, ${rB})`, cRight + cPanelW / 2, L.cSwatchY + L.cSwatchH / 2 + 7);
-}
-
-function drawMobile(rc, ctx, L, rgbR, rgbG, rgbB, rR, rG, rB) {
-  const {cLeft, cPanelW, labelSize, titleSize} = L;
-
-  // ── Top panel: RGB ──
-  ctx.font = `bold ${titleSize}px Gaegu`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#222';
-  ctx.fillText('Light mixing (RGB)', cLeft + cPanelW / 2, L.cTitleY);
-
-  ctx.textAlign = 'left';
-  ctx.font = `${labelSize}px Gaegu`;
-  ctx.fillStyle = '#cc2200'; ctx.fillText('R', cLeft + 4, L.cRY);
-  ctx.fillStyle = '#228822'; ctx.fillText('G', cLeft + 4, L.cGY);
-  ctx.fillStyle = '#0033cc'; ctx.fillText('B', cLeft + 4, L.cBY);
-
-  ctx.fillStyle = `rgb(${rgbR},${rgbG},${rgbB})`;
-  ctx.fillRect(cLeft, L.cSwatchY, cPanelW, L.cSwatchH);
-  rc.rectangle(cLeft, L.cSwatchY, cPanelW, L.cSwatchH, {roughness: 1.2, seed: 1});
-  ctx.font = `${labelSize - 2}px Gaegu`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = contrastColor(rgbR, rgbG, rgbB);
-  ctx.fillText(`rgb(${rgbR}, ${rgbG}, ${rgbB})`, cLeft + cPanelW / 2, L.cSwatchY + L.cSwatchH / 2 + 7);
-
-  // Horizontal divider
-  ctx.save();
-  ctx.setLineDash([5, 5]);
-  ctx.beginPath();
-  ctx.moveTo(8, L.cDivY);
-  ctx.lineTo(L.cW - 8, L.cDivY);
-  ctx.strokeStyle = '#bbb';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.restore();
-
-  // ── Bottom panel: RYB ──
-  ctx.font = `bold ${titleSize}px Gaegu`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#222';
-  ctx.fillText('Paint mixing (RYB)', cLeft + cPanelW / 2, L.cBotTitleY);
-
-  ctx.textAlign = 'left';
-  ctx.font = `${labelSize}px Gaegu`;
-  ctx.fillStyle = '#cc2200'; ctx.fillText('R', cLeft + 4, L.cBotRY);
-  ctx.fillStyle = '#998800'; ctx.fillText('Y', cLeft + 4, L.cBotGY);
-  ctx.fillStyle = '#0033cc'; ctx.fillText('B', cLeft + 4, L.cBotBY);
-
-  ctx.fillStyle = `rgb(${rR},${rG},${rB})`;
-  ctx.fillRect(cLeft, L.cBotSwatchY, cPanelW, L.cBotSwatchH);
-  rc.rectangle(cLeft, L.cBotSwatchY, cPanelW, L.cBotSwatchH, {roughness: 1.2, seed: 2});
-  ctx.font = `${labelSize - 2}px Gaegu`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = contrastColor(rR, rG, rB);
-  ctx.fillText(`rgb(${rR}, ${rG}, ${rB})`, cLeft + cPanelW / 2, L.cBotSwatchY + L.cBotSwatchH / 2 + 7);
+  makePanel(row, 'Light<br>(additive)',    RGB_COLORS, 'lighter',  panelW, 160, 0, 0, '18px');
+  makePanel(row, 'Paint<br>(subtractive)', RYB_COLORS, 'multiply', panelW, 160, 0, 0, '18px');
 }

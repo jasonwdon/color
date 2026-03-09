@@ -19,20 +19,18 @@ const DESKTOP_L = {
   textX: 50,  textY: 140, textW: 400, textSize: '24px',
   graphX: 490, graphY: 70, graphW: 400, graphH: 90,  graphGap: 115,
   sliderX: 490, sliderY: 455, sliderW: 400,
-  colorX: 620, colorY: 425, colorW: 140, colorH: 20,
-  labelSize: 16,
+  rainbowH: 18,
+  labelSize: 20,
   waitText: "But wait — red, green, blue?<br>Isn't that supposed to be red, <b>yellow</b>, blue?",
-  waitX: 50, waitY: 370, waitSize: '22px',
 };
 
 const MOBILE_L = {
   textX: 15,  textY: 20,  textW: 360, textSize: '22px',
   graphX: 60,  graphY: 210, graphW: 310, graphH: 75, graphGap: 100,
   sliderX: 15, sliderY: 545, sliderW: 360,
-  colorX: 55,  colorY: 517, colorW: 100, colorH: 16,
-  labelSize: 14,
+  rainbowH: 14,
+  labelSize: 18,
   waitText: "But wait... isn't it red, yellow, blue?",
-  waitX: 15, waitY: 490, waitSize: '13px',
 };
 
 export function ConesDesktop(rc, ctx, interval) {
@@ -40,11 +38,10 @@ export function ConesDesktop(rc, ctx, interval) {
 }
 
 export function ConesMobile(rc, ctx, interval) {
-  const { graphW, colorW } = MOBILE_L;
+  const { graphW } = MOBILE_L;
   const graphX  = Math.round((window.innerWidth - graphW) / 2) + 50;
   const sliderX = Math.round((window.innerWidth - graphW) / 2);
-  const colorX  = Math.round((window.innerWidth - colorW) / 2) + 50;
-  setupCones(rc, ctx, interval, {...MOBILE_L, graphX, sliderX, sliderW: graphW, colorX});
+  setupCones(rc, ctx, interval, {...MOBILE_L, graphX, sliderX, sliderW: graphW});
 }
 
 function setupCones(rc, ctx, interval, L) {
@@ -52,10 +49,9 @@ function setupCones(rc, ctx, interval, L) {
 
   TextBox({text:
     "We also learn that our eyes have three types of cone cells.<br><br>" +
-    "Each responds to a different range of wavelengths, and together they create our perception of color.",
+    "Each responds to a different range of wavelengths, and together they create our perception of color.<br><br>" +
+    L.waitText,
     x: L.textX, y: L.textY, w: L.textW, size: L.textSize, align: 'left'});
-
-  TextBox({text: L.waitText, x: L.waitX, y: L.waitY, w: L.textW, size: L.waitSize, align: 'left'});
 
   Slider({id: 'cone-slider', value: 580, min: 400, max: 650,
     x: L.sliderX, y: L.sliderY, w: L.sliderW, onChange: () => {}});
@@ -64,13 +60,43 @@ function setupCones(rc, ctx, interval, L) {
 function drawCones(ctx, rc, L) {
   clearCanvas(ctx);
   const wl = parseFloat(document.getElementById('cone-slider').value);
-  rc.rectangle(L.colorX - 50, L.colorY - 50, L.colorW, L.colorH,
-    {fill: wavelengthToColor(wl), fillStyle: 'solid', roughness: 2, seed: 1});
+  drawRainbow(ctx, L, wl);
   CONES.forEach((cone, i) => {
     drawConeGraph(ctx, cone,
       L.graphX - 50, L.graphY - 50 + i * L.graphGap,
       L.graphW, L.graphH, wl, L.labelSize);
   });
+}
+
+function drawRainbow(ctx, L, selectedWl) {
+  const barH = L.rainbowH;
+  const x = L.graphX - 50;                         // canvas coords
+  const y = L.sliderY - 50 - barH - 8;             // 8px gap above slider
+  const w = L.graphW;
+
+  // Draw pixel-by-pixel rainbow across the visible spectrum range
+  for (let px = 0; px <= w; px++) {
+    const wl = GRAPH_MIN + (px / w) * (GRAPH_MAX - GRAPH_MIN);
+    ctx.fillStyle = wavelengthToColor(wl);
+    ctx.fillRect(x + px, y, 1, barH);
+  }
+
+  // Thin border
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, w, barH);
+
+  // Vertical marker at selected wavelength
+  const selX = x + (selectedWl - GRAPH_MIN) / (GRAPH_MAX - GRAPH_MIN) * w;
+  ctx.save();
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(selX, y);
+  ctx.lineTo(selX, y + barH);
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawConeGraph(ctx, cone, x, y, w, h, selectedWl, labelSize) {
