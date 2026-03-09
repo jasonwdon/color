@@ -8,63 +8,49 @@ const RGB_COLORS = [
   { label: 'B', r: 0,   g: 0,   b: 255 },
 ];
 
-// RYB primaries rendered as their approximate RGB display values
 const RYB_COLORS = [
-  { label: 'R', r: 220, g: 20,  b: 20  },
-  { label: 'Y', r: 240, g: 200, b: 0   },
-  { label: 'B', r: 20,  g: 60,  b: 180 },
+  { label: 'R', r: 255, g: 0,   b: 0   },
+  { label: 'Y', r: 245, g: 210, b: 40  },
+  { label: 'B', r: 0,   g: 0,   b: 255 },
 ];
 
-// ── Blob rendering ────────────────────────────────────────────────────────
+// ── RYB → RGB trilinear interpolation ────────────────────────────────────
 
-const SPLOTCH_DURATION = 400; // ms
-const MAX_RADIUS = 38;
-const SPLOTCH_ALPHA = 0.55;
+// Corners of the RYB cube mapped to RGB (Gossett & Chen approach)
+const C000 = [255, 255, 255]; // white  (no pigment)
+const C100 = [255, 0,   0  ]; // red
+const C010 = [245, 210, 40 ]; // yellow
+const C001 = [0,   0,   255]; // blue
+const C110 = [255, 128, 0  ]; // red+yellow  = orange
+const C101 = [128, 0,   128]; // red+blue    = purple
+const C011 = [0,   130, 0  ]; // yellow+blue = green
+const C111 = [20,  20,  20 ]; // all three   ≈ black
 
-function easeOut(t) { return 1 - (1 - t) * (1 - t); }
-
-function drawBlob(ctx, blob) {
-  ctx.fillStyle = `rgb(${blob.color.r},${blob.color.g},${blob.color.b})`;
-  ctx.beginPath();
-  const steps = blob.bumps.length;
-  for (let i = 0; i <= steps; i++) {
-    const angle = (i / steps) * Math.PI * 2;
-    const radius = blob.r * blob.bumps[i % steps];
-    const px = blob.x + Math.cos(angle) * radius;
-    const py = blob.y + Math.sin(angle) * radius;
-    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+function rybToRgb(r, y, b) {
+  const result = new Array(3);
+  for (let ch = 0; ch < 3; ch++) {
+    result[ch] = Math.round(
+      C000[ch] * (1-r) * (1-y) * (1-b) +
+      C100[ch] * r     * (1-y) * (1-b) +
+      C010[ch] * (1-r) * y     * (1-b) +
+      C001[ch] * (1-r) * (1-y) * b     +
+      C110[ch] * r     * y     * (1-b) +
+      C101[ch] * r     * (1-y) * b     +
+      C011[ch] * (1-r) * y     * b     +
+      C111[ch] * r     * y     * b
+    );
   }
-  ctx.closePath();
-  ctx.fill();
-}
-
-function redraw(ctx, blobs, blendMode, bgColor, canvasW, canvasH) {
-  ctx.clearRect(0, 0, canvasW, canvasH);
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, canvasW, canvasH);
-
-  ctx.save();
-  ctx.globalCompositeOperation = blendMode;
-  ctx.globalAlpha = SPLOTCH_ALPHA;
-  for (const blob of blobs) drawBlob(ctx, blob);
-  ctx.restore();
-}
-
-function hitTest(blobs, x, y) {
-  for (let i = blobs.length - 1; i >= 0; i--) {
-    const b = blobs[i];
-    const hitR = b.r * 1.2;
-    const dx = x - b.x, dy = y - b.y;
-    if (dx * dx + dy * dy < hitR * hitR) return i;
-  }
-  return -1;
+  return result;
 }
 
 // ── Panel setup ────────────────────────────────────────────────────────────
 
-function makePanel(container, title, colors, blendMode, canvasW, canvasH, fontSize) {
+function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, fontSize) {
+  const isSubtractive = mode === 'subtractive';
+  const bgColor = isSubtractive ? '#fff' : '#000';
+
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:10px;`;
+  wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:8px;`;
 
   // Title
   const titleEl = document.createElement('div');
@@ -72,43 +58,72 @@ function makePanel(container, title, colors, blendMode, canvasW, canvasH, fontSi
   titleEl.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};font-weight:bold;color:#222;text-align:center;`;
   wrapper.appendChild(titleEl);
 
-  // Canvas
+  // Display canvas
   const canvas = document.createElement('canvas');
   canvas.width  = canvasW;
   canvas.height = canvasH;
-  const bgColor = blendMode === 'lighter' ? '#000' : '#fff';
-  canvas.style.cssText = `border:2px solid #aaa;border-radius:4px;background:${bgColor};display:block;cursor:default;touch-action:none;`;
+  canvas.style.cssText = `border:2px solid #aaa;border-radius:4px;background:${bgColor};display:block;cursor:crosshair;touch-action:none;`;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, canvasW, canvasH);
   wrapper.appendChild(canvas);
 
-  // Blob state
-  const blobs = [];
-  const draw = () => redraw(ctx, blobs, blendMode, bgColor, canvasW, canvasH);
+  // One offscreen layer per color.
+  // Subtractive layers: white bg, paint black → darkness = pigment amount.
+  // Additive layers:    black bg, paint the RGB color → brightness = light amount.
+  const layers = colors.map(color => {
+    const oc = document.createElement('canvas');
+    oc.width = canvasW;
+    oc.height = canvasH;
+    const octx = oc.getContext('2d');
+    octx.fillStyle = bgColor;
+    octx.fillRect(0, 0, canvasW, canvasH);
+    return { canvas: oc, ctx: octx, color };
+  });
 
-  function addBlob(color) {
-    const blob = {
-      x: 50 + Math.random() * (canvasW - 100),
-      y: 40 + Math.random() * (canvasH - 80),
-      r: 0,
-      color,
-      bumps: Array.from({length: 8}, () => 0.82 + Math.random() * 0.36),
-    };
-    blobs.push(blob);
+  // ── Compositing ──────────────────────────────────────────────────────────
 
-    const start = performance.now();
-    function grow(now) {
-      const t = Math.min((now - start) / SPLOTCH_DURATION, 1);
-      blob.r = easeOut(t) * MAX_RADIUS;
-      draw();
-      if (t < 1) requestAnimationFrame(grow);
-    }
-    requestAnimationFrame(grow);
+  function compositeAdditive() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const layer of layers) ctx.drawImage(layer.canvas, 0, 0);
+    ctx.restore();
   }
 
-  // Drag state
-  let dragging = -1, dragOffX = 0, dragOffY = 0;
+  function compositeSubtractive() {
+    // Read pigment amount from each layer (darkness = amount) and convert RYB→RGB
+    const layerData = layers.map(l => l.ctx.getImageData(0, 0, canvasW, canvasH).data);
+    const imgData = ctx.createImageData(canvasW, canvasH);
+    const out = imgData.data;
+    const n = canvasW * canvasH;
+    for (let i = 0; i < n; i++) {
+      const pi = i * 4;
+      // Layer pixels are painted black-on-white, so red channel = brightness.
+      // Pigment amount = 1 − brightness.
+      const rAmt = 1 - layerData[0][pi] / 255;
+      const yAmt = 1 - layerData[1][pi] / 255;
+      const bAmt = 1 - layerData[2][pi] / 255;
+      const [cr, cg, cb] = rybToRgb(rAmt, yAmt, bAmt);
+      out[pi]     = cr;
+      out[pi + 1] = cg;
+      out[pi + 2] = cb;
+      out[pi + 3] = 255;
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  function composite() {
+    if (isSubtractive) compositeSubtractive();
+    else compositeAdditive();
+  }
+
+  // ── Brush ────────────────────────────────────────────────────────────────
+
+  let currentLayerIdx = 0;
+  let isPainting = false;
+  let lastX = null, lastY = null;
 
   function canvasCoords(e) {
     const rect = canvas.getBoundingClientRect();
@@ -120,60 +135,92 @@ function makePanel(container, title, colors, blendMode, canvasW, canvasH, fontSi
     ];
   }
 
+  function paintStroke(x, y) {
+    const layer = layers[currentLayerIdx];
+    const lctx = layer.ctx;
+    lctx.save();
+    lctx.globalAlpha = 0.3;
+    if (isSubtractive) {
+      lctx.strokeStyle = '#000';  // darkness = pigment amount
+    } else {
+      lctx.strokeStyle = `rgb(${layer.color.r},${layer.color.g},${layer.color.b})`;
+    }
+    lctx.lineWidth = brushSize;
+    lctx.lineCap = 'round';
+    lctx.lineJoin = 'round';
+    lctx.beginPath();
+    if (lastX !== null) {
+      lctx.moveTo(lastX, lastY);
+      lctx.lineTo(x, y);
+    } else {
+      lctx.moveTo(x, y);
+      lctx.lineTo(x + 0.1, y);
+    }
+    lctx.stroke();
+    lctx.restore();
+    lastX = x;
+    lastY = y;
+    composite();
+  }
+
   canvas.addEventListener('pointerdown', (e) => {
     const [cx, cy] = canvasCoords(e);
-    const idx = hitTest(blobs, cx, cy);
-    if (idx !== -1) {
-      // Bring to top
-      blobs.push(blobs.splice(idx, 1)[0]);
-      dragging = blobs.length - 1;
-      dragOffX = cx - blobs[dragging].x;
-      dragOffY = cy - blobs[dragging].y;
-      canvas.setPointerCapture(e.pointerId);
-      canvas.style.cursor = 'grabbing';
-      e.preventDefault();
-    }
+    isPainting = true;
+    lastX = null;
+    paintStroke(cx, cy);
+    canvas.setPointerCapture(e.pointerId);
+    e.preventDefault();
   });
 
   canvas.addEventListener('pointermove', (e) => {
+    if (!isPainting) return;
     const [cx, cy] = canvasCoords(e);
-    if (dragging !== -1) {
-      blobs[dragging].x = cx - dragOffX;
-      blobs[dragging].y = cy - dragOffY;
-      draw();
-    } else {
-      canvas.style.cursor = hitTest(blobs, cx, cy) !== -1 ? 'grab' : 'default';
-    }
+    paintStroke(cx, cy);
   });
 
-  canvas.addEventListener('pointerup',     () => { dragging = -1; canvas.style.cursor = 'default'; });
-  canvas.addEventListener('pointercancel', () => { dragging = -1; canvas.style.cursor = 'default'; });
+  canvas.addEventListener('pointerup',     () => { isPainting = false; lastX = null; lastY = null; });
+  canvas.addEventListener('pointercancel', () => { isPainting = false; lastX = null; lastY = null; });
 
-  // Buttons row
+  // ── Color buttons ────────────────────────────────────────────────────────
+
   const btnRow = document.createElement('div');
-  btnRow.style.cssText = `display:flex;gap:12px;justify-content:center;`;
+  btnRow.style.cssText = `display:flex;gap:10px;justify-content:center;align-items:center;`;
 
-  colors.forEach(color => {
+  // Small swatch showing active color
+  const displayColors = isSubtractive ? RYB_COLORS : colors;
+  const swatch = document.createElement('div');
+  swatch.style.cssText = `width:16px;height:16px;border-radius:50%;border:2px solid #666;flex-shrink:0;background:rgb(${displayColors[0].r},${displayColors[0].g},${displayColors[0].b});`;
+  btnRow.appendChild(swatch);
+
+  colors.forEach((color, i) => {
+    const dc = displayColors[i];
     const btn = document.createElement('wired-button');
     btn.className = 'object';
     btn.innerHTML = color.label;
-    btn.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};color:rgb(${color.r},${color.g},${color.b});position:static;`;
-    btn.addEventListener('click', () => addBlob(color));
+    btn.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};color:rgb(${dc.r},${dc.g},${dc.b});position:static;`;
+    btn.addEventListener('click', () => {
+      currentLayerIdx = i;
+      swatch.style.background = `rgb(${dc.r},${dc.g},${dc.b})`;
+      swatch.style.borderColor = `rgb(${Math.round(dc.r*0.6)},${Math.round(dc.g*0.6)},${Math.round(dc.b*0.6)})`;
+    });
     btnRow.appendChild(btn);
   });
 
   wrapper.appendChild(btnRow);
 
-  // Reset button
-  const reset = document.createElement('wired-button');
-  reset.className = 'object';
-  reset.innerHTML = 'reset';
-  reset.style.cssText = `font-family:Gaegu,cursive;font-size:16px;color:#888;position:static;`;
-  reset.addEventListener('click', () => {
-    blobs.length = 0;
-    draw();
+  // Clear button
+  const clearBtn = document.createElement('wired-button');
+  clearBtn.className = 'object';
+  clearBtn.innerHTML = 'clear';
+  clearBtn.style.cssText = `font-family:Gaegu,cursive;font-size:16px;color:#888;position:static;`;
+  clearBtn.addEventListener('click', () => {
+    for (const layer of layers) {
+      layer.ctx.fillStyle = bgColor;
+      layer.ctx.fillRect(0, 0, canvasW, canvasH);
+    }
+    composite();
   });
-  wrapper.appendChild(reset);
+  wrapper.appendChild(clearBtn);
 
   container.appendChild(wrapper);
   return wrapper;
@@ -195,8 +242,8 @@ export function ColorMixerDesktop(rc, ctx, interval) {
   row.style.cssText = `position:absolute;left:460px;top:50px;display:flex;gap:40px;align-items:flex-start;`;
   sandbox.appendChild(row);
 
-  makePanel(row, 'Light mixing (additive)',    RGB_COLORS, 'lighter',  180, 200, '20px');
-  makePanel(row, 'Paint mixing (subtractive)', RYB_COLORS, 'multiply', 180, 200, '20px');
+  makePanel(row, 'Light mixing (additive)',    RGB_COLORS, 'additive',    190, 210, 38, '20px');
+  makePanel(row, 'Paint mixing (subtractive)', RYB_COLORS, 'subtractive', 190, 210, 38, '20px');
 }
 
 // ── Mobile ─────────────────────────────────────────────────────────────────
@@ -217,6 +264,6 @@ export function ColorMixerMobile(rc, ctx, interval) {
   row.style.cssText = `position:absolute;left:0;right:0;top:160px;display:flex;gap:10px;justify-content:center;align-items:flex-start;`;
   sandbox.appendChild(row);
 
-  makePanel(row, 'Light<br>(additive)',    RGB_COLORS, 'lighter',  panelW, 160, '18px');
-  makePanel(row, 'Paint<br>(subtractive)', RYB_COLORS, 'multiply', panelW, 160, '18px');
+  makePanel(row, 'Light<br>(additive)',    RGB_COLORS, 'additive',    panelW, 170, 25, '18px');
+  makePanel(row, 'Paint<br>(subtractive)', RYB_COLORS, 'subtractive', panelW, 170, 25, '18px');
 }
