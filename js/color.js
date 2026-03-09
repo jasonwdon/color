@@ -39,7 +39,7 @@ function init() {
 function showSlide(i) {
   const { width, height, isMobile } = getLayout();
   setDimensions(width, height);
-  window.location.hash = slides[i].name;
+  history.replaceState(null, '', i === 0 ? window.location.pathname : '#' + slides[i].name);
   clearSandbox(interval);
 
   let canvas = document.createElement('canvas');
