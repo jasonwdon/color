@@ -1,4 +1,4 @@
-import {TextBox, Button} from '../components.js';
+import {TextBox} from '../components.js';
 
 // ── Color definitions ──────────────────────────────────────────────────────
 
@@ -15,66 +15,54 @@ const RYB_COLORS = [
   { label: 'B', r: 20,  g: 60,  b: 180 },
 ];
 
-// ── Splotch animation ──────────────────────────────────────────────────────
+// ── Blob rendering ────────────────────────────────────────────────────────
 
 const SPLOTCH_DURATION = 400; // ms
-const MAX_RADIUS = 17;
+const MAX_RADIUS = 38;
 const SPLOTCH_ALPHA = 0.55;
 
 function easeOut(t) { return 1 - (1 - t) * (1 - t); }
 
-// Returns a cleanup function
-function animateSplotch(canvas, color, blendMode, onDone) {
-  const ctx = canvas.getContext('2d');
-  const x = 40 + Math.random() * (canvas.width - 80);
-  const y = 30 + Math.random() * (canvas.height - 60);
-  const start = performance.now();
-
-  // Snapshot canvas before animation so each frame restores to this state,
-  // preventing repeated blend operations from accumulating (e.g. multiply → black).
-  const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  // Slightly irregular shape via a few random offsets
-  const bumps = Array.from({length: 8}, () => 0.82 + Math.random() * 0.36);
-
-  let raf;
-  function frame(now) {
-    const t = Math.min((now - start) / SPLOTCH_DURATION, 1);
-    const r = easeOut(t) * MAX_RADIUS;
-
-    ctx.putImageData(snapshot, 0, 0);
-
-    ctx.save();
-    ctx.globalCompositeOperation = blendMode;
-    ctx.globalAlpha = SPLOTCH_ALPHA;
-    ctx.fillStyle = `rgb(${color.r},${color.g},${color.b})`;
-
-    ctx.beginPath();
-    const steps = bumps.length;
-    for (let i = 0; i <= steps; i++) {
-      const angle = (i / steps) * Math.PI * 2;
-      const radius = r * bumps[i % steps];
-      const px = x + Math.cos(angle) * radius;
-      const py = y + Math.sin(angle) * radius;
-      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    if (t < 1) {
-      raf = requestAnimationFrame(frame);
-    } else {
-      onDone();
-    }
+function drawBlob(ctx, blob) {
+  ctx.fillStyle = `rgb(${blob.color.r},${blob.color.g},${blob.color.b})`;
+  ctx.beginPath();
+  const steps = blob.bumps.length;
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * Math.PI * 2;
+    const radius = blob.r * blob.bumps[i % steps];
+    const px = blob.x + Math.cos(angle) * radius;
+    const py = blob.y + Math.sin(angle) * radius;
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
   }
-  raf = requestAnimationFrame(frame);
-  return () => cancelAnimationFrame(raf);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function redraw(ctx, blobs, blendMode, bgColor, canvasW, canvasH) {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  ctx.save();
+  ctx.globalCompositeOperation = blendMode;
+  ctx.globalAlpha = SPLOTCH_ALPHA;
+  for (const blob of blobs) drawBlob(ctx, blob);
+  ctx.restore();
+}
+
+function hitTest(blobs, x, y) {
+  for (let i = blobs.length - 1; i >= 0; i--) {
+    const b = blobs[i];
+    const hitR = b.r * 1.2;
+    const dx = x - b.x, dy = y - b.y;
+    if (dx * dx + dy * dy < hitR * hitR) return i;
+  }
+  return -1;
 }
 
 // ── Panel setup ────────────────────────────────────────────────────────────
 
-function makePanel(container, title, colors, blendMode, canvasW, canvasH, btnY, titleY, fontSize) {
+function makePanel(container, title, colors, blendMode, canvasW, canvasH, fontSize) {
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:10px;`;
 
@@ -89,26 +77,88 @@ function makePanel(container, title, colors, blendMode, canvasW, canvasH, btnY, 
   canvas.width  = canvasW;
   canvas.height = canvasH;
   const bgColor = blendMode === 'lighter' ? '#000' : '#fff';
-  canvas.style.cssText = `border:2px solid #aaa;border-radius:4px;background:${bgColor};display:block;`;
+  canvas.style.cssText = `border:2px solid #aaa;border-radius:4px;background:${bgColor};display:block;cursor:default;touch-action:none;`;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, canvasW, canvasH);
   wrapper.appendChild(canvas);
 
+  // Blob state
+  const blobs = [];
+  const draw = () => redraw(ctx, blobs, blendMode, bgColor, canvasW, canvasH);
+
+  function addBlob(color) {
+    const blob = {
+      x: 50 + Math.random() * (canvasW - 100),
+      y: 40 + Math.random() * (canvasH - 80),
+      r: 0,
+      color,
+      bumps: Array.from({length: 8}, () => 0.82 + Math.random() * 0.36),
+    };
+    blobs.push(blob);
+
+    const start = performance.now();
+    function grow(now) {
+      const t = Math.min((now - start) / SPLOTCH_DURATION, 1);
+      blob.r = easeOut(t) * MAX_RADIUS;
+      draw();
+      if (t < 1) requestAnimationFrame(grow);
+    }
+    requestAnimationFrame(grow);
+  }
+
+  // Drag state
+  let dragging = -1, dragOffX = 0, dragOffY = 0;
+
+  function canvasCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return [
+      (e.clientX - rect.left) * scaleX,
+      (e.clientY - rect.top)  * scaleY,
+    ];
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    const [cx, cy] = canvasCoords(e);
+    const idx = hitTest(blobs, cx, cy);
+    if (idx !== -1) {
+      // Bring to top
+      blobs.push(blobs.splice(idx, 1)[0]);
+      dragging = blobs.length - 1;
+      dragOffX = cx - blobs[dragging].x;
+      dragOffY = cy - blobs[dragging].y;
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    const [cx, cy] = canvasCoords(e);
+    if (dragging !== -1) {
+      blobs[dragging].x = cx - dragOffX;
+      blobs[dragging].y = cy - dragOffY;
+      draw();
+    } else {
+      canvas.style.cursor = hitTest(blobs, cx, cy) !== -1 ? 'grab' : 'default';
+    }
+  });
+
+  canvas.addEventListener('pointerup',     () => { dragging = -1; canvas.style.cursor = 'default'; });
+  canvas.addEventListener('pointercancel', () => { dragging = -1; canvas.style.cursor = 'default'; });
+
   // Buttons row
   const btnRow = document.createElement('div');
   btnRow.style.cssText = `display:flex;gap:12px;justify-content:center;`;
 
-  let cancelAnim = null;
   colors.forEach(color => {
     const btn = document.createElement('wired-button');
     btn.className = 'object';
     btn.innerHTML = color.label;
     btn.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};color:rgb(${color.r},${color.g},${color.b});position:static;`;
-    btn.addEventListener('click', () => {
-      if (cancelAnim) cancelAnim();
-      cancelAnim = animateSplotch(canvas, color, blendMode, () => { cancelAnim = null; });
-    });
+    btn.addEventListener('click', () => addBlob(color));
     btnRow.appendChild(btn);
   });
 
@@ -120,10 +170,8 @@ function makePanel(container, title, colors, blendMode, canvasW, canvasH, btnY, 
   reset.innerHTML = 'reset';
   reset.style.cssText = `font-family:Gaegu,cursive;font-size:16px;color:#888;position:static;`;
   reset.addEventListener('click', () => {
-    if (cancelAnim) { cancelAnim(); cancelAnim = null; }
-    ctx.clearRect(0, 0, canvasW, canvasH);
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, canvasW, canvasH);
+    blobs.length = 0;
+    draw();
   });
   wrapper.appendChild(reset);
 
@@ -143,13 +191,12 @@ export function ColorMixerDesktop(rc, ctx, interval) {
     x: 50, y: 60, w: 380, size: '22px', align: 'left', lineHeight: '1.35',
   });
 
-  // Flex row to hold both panels, positioned in sandbox
   const row = document.createElement('div');
   row.style.cssText = `position:absolute;left:460px;top:50px;display:flex;gap:40px;align-items:flex-start;`;
   sandbox.appendChild(row);
 
-  makePanel(row, 'Light mixing (additive)', RGB_COLORS, 'lighter',  180, 200, 0, 0, '20px');
-  makePanel(row, 'Paint mixing (subtractive)', RYB_COLORS, 'multiply', 180, 200, 0, 0, '20px');
+  makePanel(row, 'Light mixing (additive)',    RGB_COLORS, 'lighter',  180, 200, '20px');
+  makePanel(row, 'Paint mixing (subtractive)', RYB_COLORS, 'multiply', 180, 200, '20px');
 }
 
 // ── Mobile ─────────────────────────────────────────────────────────────────
@@ -170,6 +217,6 @@ export function ColorMixerMobile(rc, ctx, interval) {
   row.style.cssText = `position:absolute;left:0;right:0;top:160px;display:flex;gap:10px;justify-content:center;align-items:flex-start;`;
   sandbox.appendChild(row);
 
-  makePanel(row, 'Light<br>(additive)',    RGB_COLORS, 'lighter',  panelW, 160, 0, 0, '18px');
-  makePanel(row, 'Paint<br>(subtractive)', RYB_COLORS, 'multiply', panelW, 160, 0, 0, '18px');
+  makePanel(row, 'Light<br>(additive)',    RGB_COLORS, 'lighter',  panelW, 160, '18px');
+  makePanel(row, 'Paint<br>(subtractive)', RYB_COLORS, 'multiply', panelW, 160, '18px');
 }
