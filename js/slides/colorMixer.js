@@ -43,6 +43,74 @@ function rybToRgb(r, y, b) {
   return result;
 }
 
+// ── Brush helpers (also used for pre-fill) ─────────────────────────────────
+
+function paintBristleLine(lctx, x1, y1, x2, y2, strokeStyle, bSize) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < 0.5) return;
+  // normalized perpendicular
+  const perpX = -dy / dist, perpY = dx / dist;
+  const halfBrush = bSize / 4;
+  lctx.save();
+  lctx.lineCap = 'round';
+  lctx.strokeStyle = strokeStyle;
+  for (let i = 0; i < 18; i++) {
+    const t = (i / 17 - 0.5) * 2;
+    // slightly uneven spread — not perfectly uniform
+    const spread = t * halfBrush * (0.75 + Math.random() * 0.5);
+    const ox = perpX * spread, oy = perpY * spread;
+
+    // trim each bristle slightly at start/end so lengths vary
+    const s = Math.random() * 0.06, e = 1 - Math.random() * 0.06;
+    const bx1 = x1 + dx*s + ox, by1 = y1 + dy*s + oy;
+    const bx2 = x1 + dx*e + ox, by2 = y1 + dy*e + oy;
+
+    // quadratic bezier: control point wobbles perpendicular → curved bristle
+    const wobble = (Math.random() - 0.5) * bSize * 0.35;
+    const cpx = (bx1+bx2)/2 + perpX * wobble;
+    const cpy = (by1+by2)/2 + perpY * wobble;
+
+    lctx.globalAlpha = 0.07 + Math.random() * 0.22;
+    lctx.lineWidth = 0.5 + Math.random() * 2;
+    lctx.beginPath();
+    lctx.moveTo(bx1, by1);
+    lctx.quadraticCurveTo(cpx, cpy, bx2, by2);
+    lctx.stroke();
+  }
+  lctx.restore();
+}
+
+function prefillVennDiagram(layers, isSubtractive, canvasW, canvasH, brushSize) {
+  const r = Math.min(canvasW, canvasH) * 0.26;
+  const d = r * 0.7;
+  const cx = canvasW / 2;
+  const cy = canvasH / 2 + d / 4;
+  const centers = [
+    { x: cx,           y: cy - d },
+    { x: cx - d*0.866, y: cy + d*0.5 },
+    { x: cx + d*0.866, y: cy + d*0.5 },
+  ];
+  // all strokes go diagonally (top-left → bottom-right)
+  const strokeAngle = Math.PI * 0.75;
+  const cos = Math.cos(strokeAngle), sin = Math.sin(strokeAngle);
+  for (let li = 0; li < layers.length; li++) {
+    const layer = layers[li];
+    const strokeStyle = isSubtractive
+      ? '#000'
+      : `rgb(${layer.color.r},${layer.color.g},${layer.color.b})`;
+    const { x: ccx, y: ccy } = centers[li];
+    for (let u = -r; u <= r; u += 2.5 + Math.random() * 0.5) {
+      const jitter = (Math.random() - 0.5) * 0.3;
+      const jcos = Math.cos(strokeAngle + jitter), jsin = Math.sin(strokeAngle + jitter);
+      const hw = Math.sqrt(Math.max(0, r*r - u*u));
+      const ax = ccx - jcos*hw - jsin*u, ay = ccy - jsin*hw + jcos*u;
+      const bx = ccx + jcos*hw - jsin*u, by = ccy + jsin*hw + jcos*u;
+      paintBristleLine(layer.ctx, ax, ay, bx, by, strokeStyle, brushSize);
+    }
+  }
+}
+
 // ── Panel setup ────────────────────────────────────────────────────────────
 
 function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, fontSize) {
@@ -137,27 +205,10 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
 
   function paintStroke(x, y) {
     const layer = layers[currentLayerIdx];
-    const lctx = layer.ctx;
-    lctx.save();
-    lctx.globalAlpha = 0.3;
-    if (isSubtractive) {
-      lctx.strokeStyle = '#000';  // darkness = pigment amount
-    } else {
-      lctx.strokeStyle = `rgb(${layer.color.r},${layer.color.g},${layer.color.b})`;
-    }
-    lctx.lineWidth = brushSize;
-    lctx.lineCap = 'round';
-    lctx.lineJoin = 'round';
-    lctx.beginPath();
-    if (lastX !== null) {
-      lctx.moveTo(lastX, lastY);
-      lctx.lineTo(x, y);
-    } else {
-      lctx.moveTo(x, y);
-      lctx.lineTo(x + 0.1, y);
-    }
-    lctx.stroke();
-    lctx.restore();
+    const strokeStyle = isSubtractive
+      ? '#000'
+      : `rgb(${layer.color.r},${layer.color.g},${layer.color.b})`;
+    paintBristleLine(layer.ctx, lastX ?? x, lastY ?? y, x, y, strokeStyle, brushSize);
     lastX = x;
     lastY = y;
     composite();
@@ -222,6 +273,9 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
   });
   wrapper.appendChild(clearBtn);
 
+  prefillVennDiagram(layers, isSubtractive, canvasW, canvasH, brushSize);
+  composite();
+
   container.appendChild(wrapper);
   return wrapper;
 }
@@ -232,10 +286,10 @@ export function ColorMixerDesktop(rc, ctx, interval) {
   const sandbox = document.getElementById('sandbox');
 
   TextBox({
-    text: 'There are two ways to mix color.<br><br>' +
-          '<b>Additive</b> mixing (light): start with black, add colored light — R+G+B = white.<br><br>' +
-          '<b>Subtractive</b> mixing (paint): start with white, add pigment — each pigment absorbs light.',
-    x: 50, y: 60, w: 380, size: '22px', align: 'left', lineHeight: '1.35',
+    text: 'Both systems are consistent with your cone biology — the difference is the medium.<br><br>' +
+          '<b>Screens</b> start with black and emit light. Adding R, G, B together makes white.<br><br>' +
+          '<b>Paint</b> starts with white and absorbs wavelengths. Each pigment blocks certain frequencies — so mixing darkens, and the primaries are different.',
+    x: 50, y: 50, w: 390, size: '21px', align: 'left', lineHeight: '1.35',
   });
 
   const row = document.createElement('div');
@@ -253,8 +307,9 @@ export function ColorMixerMobile(rc, ctx, interval) {
   const W = window.innerWidth;
 
   TextBox({
-    text: '<b>Additive</b> (light): start black, add R+G+B → white.<br>' +
-          '<b>Subtractive</b> (paint): start white, add pigment → absorbs light.',
+    text: 'Same cones, different medium.<br>' +
+          '<b>Screens</b> emit light on black — R+G+B → white.<br>' +
+          '<b>Paint</b> absorbs wavelengths from white — mixing blocks frequencies.',
     x: 10, y: 55, w: W - 20, size: '20px', align: 'left', lineHeight: '1.3',
   });
 
