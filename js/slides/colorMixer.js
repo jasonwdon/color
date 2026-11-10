@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=29';
-import {onResize, mobileContentBottom} from '../utils.js?v=29';
+import {TextBox} from '../components.js?v=30';
+import {onResize, mobileContentBottom} from '../utils.js?v=30';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -352,6 +352,11 @@ const word = (color, text = color) => `<b style='color:${color}'>${text}</b>`;
 const RED = word('red'), GREEN = word('green'), BLUE = word('blue'), YELLOW = word('yellow');
 const MAGENTA = word('magenta');
 const BLACK = '<b>black</b>';
+// acronyms colored letter by letter
+const letters = (...pairs) => '<b>' + pairs.map(([c, l]) => `<span style='color:${c}'>${l}</span>`).join('') + '</b>';
+const RYB = letters(['red', 'R'], ['yellow', 'Y'], ['blue', 'B']);
+const CMY = letters(['cyan', 'C'], ['magenta', 'M'], ['yellow', 'Y']);
+const RGB = letters(['red', 'R'], ['green', 'G'], ['blue', 'B']);
 const WHITE = "<b style='color:white; background-color:black; padding: 0 4px; border-radius: 3px;'>white</b>";
 
 // same text on phones and desktop
@@ -370,9 +375,9 @@ const PAINT_TEXT =
 // caption under the arrows diagram, which opens a note about school
 const CAPTION =
   `<button type='button' class='note-link' aria-expanded='false'>Not red, yellow, blue?</button>` +
-  `<span class='note-popup' hidden>The RYB model dates back to 18th-century art theory, before light absorption ` +
+  `<span class='note-popup' hidden>The ${RYB} model dates back to 18th-century art theory, before light absorption ` +
   "and human vision were fully understood. Because early painters relied on naturally occurring minerals and dyes, " +
-  "RYB became the standard teaching model for generations. Modern color science eventually replaced it with CMY and RGB, " +
+  `${RYB} became the standard teaching model for generations. Modern color science eventually replaced it with ${CMY} and ${RGB}, ` +
   "but the traditional model simply stuck around in early education.</span>";
 
 
@@ -445,16 +450,14 @@ function setupNote(el) {
     // as wide as reads well, but never wider than the screen
     const sandbox = document.getElementById('sandbox').getBoundingClientRect();
     note.style.width = Math.min(340, sandbox.width - 24) + 'px';
-    // centered under the link, then nudged back inside the sandbox
+    // centered on the slide (left is measured from the caption, which
+    // holds the popup)
     note.style.top = '';
-    let left = star.offsetLeft + (star.offsetWidth - note.offsetWidth) / 2;
-    note.style.left = left + 'px';
-    let box = note.getBoundingClientRect();
-    if (box.right > sandbox.right - 8) left -= box.right - (sandbox.right - 8);
-    else if (box.left < sandbox.left + 8) left += (sandbox.left + 8) - box.left;
+    const anchor = el.getBoundingClientRect();
+    const left = sandbox.left + (sandbox.width - note.offsetWidth) / 2 - anchor.left;
     note.style.left = Math.round(left) + 'px';
     // open upward if it would run off the bottom
-    box = note.getBoundingClientRect();
+    const box = note.getBoundingClientRect();
     if (box.bottom > sandbox.bottom - 8) note.style.top = `${-note.offsetHeight - 4}px`;
   };
   star.addEventListener('click', () => setOpen(note.hidden));

@@ -196,12 +196,11 @@ wired-button:hover {
   touch-action: manipulation;
 }
 
-/* the caption sits centered under the diagram's circles, which are to the
-   right of the "light" and "paint" labels (their middle is 128px in) */
+/* the caption sits centered under the diagram (on phones the diagram is
+   centered, so the caption is centered on the screen too) */
 .diagram-caption {
   display: block;
   box-sizing: border-box;
-  padding-left: 51px;
   text-align: center;
   margin-top: -4px;
   line-height: 1;
