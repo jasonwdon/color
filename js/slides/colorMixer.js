@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=18';
-import {onResize, mobileContentBottom} from '../utils.js?v=18';
+import {TextBox} from '../components.js?v=19';
+import {onResize, mobileContentBottom} from '../utils.js?v=19';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -275,7 +275,7 @@ const PAINTS = [
 ];
 // [light index, paint index]
 const ARROWS = [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1], [2, 2]];
-const DIAGRAM_W = 280, DIAGRAM_H = 148;
+const DIAGRAM_W = 250, DIAGRAM_H = 116;
 
 function makeOppositesDiagram(container) {
   const dpr = window.devicePixelRatio || 1;
@@ -290,29 +290,29 @@ function makeOppositesDiagram(container) {
   ctx.scale(dpr, dpr);
   const rc = rough.canvas(canvas);
 
-  const colX = (i) => 100 + i * 74;
-  const topY = 38, bottomY = 110, d = 32;
+  const colX = (i) => 92 + i * 66;
+  const topY = 30, bottomY = 84, d = 24;
 
   function draw() {
     ctx.clearRect(0, 0, DIAGRAM_W, DIAGRAM_H);
     ctx.fillStyle = '#222';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
-    ctx.font = 'bold 20px Gaegu, cursive';
+    ctx.font = 'bold 18px Gaegu, cursive';
     ctx.fillText('light', 4, topY);
-    ctx.fillText('paint', 4, bottomY);
+    ctx.fillText('paint*', 4, bottomY);
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    ctx.font = '17px Gaegu, cursive';
+    ctx.font = '15px Gaegu, cursive';
     const circle = {fillStyle: 'solid', strokeWidth: 2};
     LIGHTS.forEach((c, i) => {
       rc.circle(colX(i), topY, d, {...circle, fill: c.fill, seed: i + 1});
-      ctx.fillText(c.name, colX(i), topY - d / 2 - 6);
+      ctx.fillText(c.name, colX(i), topY - d / 2 - 5);
     });
     PAINTS.forEach((c, i) => {
       rc.circle(colX(i), bottomY, d, {...circle, fill: c.fill, seed: i + 4});
-      ctx.fillText(c.name, colX(i), bottomY + d / 2 + 16);
+      ctx.fillText(c.name, colX(i), bottomY + d / 2 + 14);
     });
 
     // arrows from each light down to the paints it makes, in the light's color
@@ -320,7 +320,7 @@ function makeOppositesDiagram(container) {
       const x1 = colX(li), y1 = topY, x2 = colX(pi), y2 = bottomY;
       const len = Math.hypot(x2 - x1, y2 - y1);
       const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
-      const gap = d / 2 + 5;
+      const gap = d / 2 + 4;
       const sx = x1 + ux * gap, sy = y1 + uy * gap;
       const ex = x2 - ux * gap, ey = y2 - uy * gap;
       const line = {stroke: LIGHTS[li].fill, strokeWidth: 2, roughness: 1, seed: k + 10};
@@ -329,7 +329,7 @@ function makeOppositesDiagram(container) {
       for (const a of [0.5, -0.5]) {
         const cos = Math.cos(a), sin = Math.sin(a);
         const bx = -(ux * cos - uy * sin), by = -(ux * sin + uy * cos);
-        rc.line(ex, ey, ex + bx * 9, ey + by * 9, line);
+        rc.line(ex, ey, ex + bx * 7, ey + by * 7, line);
       }
     });
   }
@@ -358,10 +358,16 @@ const LIGHT_TEXT =
 
 const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
-  "and each layer of paint blocks some of those wavelengths from reaching your eyes.<br><br>" +
+  "and each layer of paint blocks some of those wavelengths from reaching your eyes. " +
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
-  `and together they read as ${MAGENTA}.<br><br>` +
-  `In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.`;
+  `and together they read as ${MAGENTA}.`;
+
+// a footnote under the arrows diagram, tied to the asterisk on "paint*"
+// plain yellow is hard to read in small type, so the footnote's is darker
+const tint = (color, text = color) => `<span style='color:${color}'>${text}</span>`;
+const PAINT_FOOTNOTE =
+  `* In school, we learned ${tint('red')}, ${tint('#d4b000', 'yellow')} and ${tint('blue')} ` +
+  'because it was simpler.';
 
 const LIGHT_TITLE = 'Light mixing (additive)';
 const PAINT_TITLE = 'Paint mixing (subtractive)';
@@ -388,15 +394,16 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  TextBox({text: PAINT_TEXT, x: 50, y: 70, w: 400, size: '23px', align: 'left', lineHeight: '1.35'});
+  TextBox({text: PAINT_TEXT, x: 50, y: 130, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
 
-  // the arrows diagram sits right above the mixer
+  // the arrows diagram and its footnote sit right above the mixer
   const row = rightColumn();
   row.style.flexDirection = 'column';
   row.style.gap = '6px';
   makeOppositesDiagram(row);
+  footnote(row, PAINT_FOOTNOTE, '16px');
   makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 360, canvasH: 185, brushSize: 38, fontSize: '20px', clearInline: true});
+    canvasW: 360, canvasH: 200, brushSize: 38, fontSize: '20px', clearInline: true});
 }
 
 export function PaintMixingMobile() {
@@ -408,12 +415,23 @@ export function PaintMixingMobile() {
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
     row.appendChild(col);
     makeOppositesDiagram(col);
+    footnote(col, PAINT_FOOTNOTE, '14px');
     makePanel(col, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-      canvasW, canvasH: 150, brushSize: 28, fontSize: '18px', clearInline: true});
+      canvasW, canvasH: 160, brushSize: 28, fontSize: '18px', clearInline: true});
   });
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
+
+// small muted line, e.g. the footnote under the arrows diagram
+function footnote(container, html, fontSize) {
+  const el = document.createElement('div');
+  el.className = 'object textbox'; // fades in with the rest of the slide
+  el.innerHTML = html;
+  el.style.cssText = `position:static;font-size:${fontSize};line-height:1.2;color:#666;text-align:center;max-width:380px;`;
+  container.appendChild(el);
+  return el;
+}
 
 // desktop: the mixer (and diagram) centered in the space right of the text,
 // above the BACK/NEXT buttons
