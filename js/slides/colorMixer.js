@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=31';
-import {onResize, mobileContentBottom} from '../utils.js?v=31';
+import {TextBox} from '../components.js?v=32';
+import {onResize, mobileContentBottom} from '../utils.js?v=32';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -412,7 +412,7 @@ export function PaintMixingDesktop() {
   document.getElementById('sandbox').appendChild(group);
   makeCaptionedDiagram(group);
   onResize([text], () => {
-    group.style.top = (text.offsetTop + text.offsetHeight + 16) + 'px';
+    group.style.top = (text.offsetTop + text.offsetHeight + 2) + 'px';
   });
 
   // the mixer gets the right side to itself
@@ -424,15 +424,18 @@ export function PaintMixingDesktop() {
 export function PaintMixingMobile() {
   const W = window.innerWidth;
   const canvasW = Math.min(300, W - 40);
+  // spare room goes between the caption and the mixer, not above the diagram
+  const spacer = document.createElement('div');
   layoutMobile(PAINT_TEXT, 19, (row) => {
     // one column: the arrows diagram right above the mixer
     const col = document.createElement('div');
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
     row.appendChild(col);
     makeCaptionedDiagram(col);
+    col.appendChild(spacer);
     makePanel(col, {colors: CMY_COLORS, mode: 'subtractive',
       canvasW, canvasH: 220, brushSize: 28, fontSize: '18px', clearInline: true});
-  });
+  }, spacer);
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
@@ -483,7 +486,10 @@ function rightColumn() {
 // phones: text at the top, then a row of content below wherever the text
 // actually ends. On short screens the text shrinks a little first, then the
 // row shrinks to fit above the buttons.
-function layoutMobile(textHtml, startSize, fill) {
+// the gap under the paint slide's caption on phones
+const SPACER_MIN = 12, SPACER_MAX = 40;
+
+function layoutMobile(textHtml, startSize, fill, spacer = null) {
   const sandbox = document.getElementById('sandbox');
   const W = window.innerWidth;
 
@@ -497,7 +503,10 @@ function layoutMobile(textHtml, startSize, fill) {
   fill(row);
 
   onResize([text, row], () => {
-    const top = text.offsetTop + text.offsetHeight + 14;
+    // with a spacer, the row sits right under the text and spare room goes
+    // into the spacer instead, so start from its smallest height
+    if (spacer) spacer.style.height = SPACER_MIN + 'px';
+    const top = text.offsetTop + text.offsetHeight + (spacer ? 2 : 14);
     const room = mobileContentBottom() - top;
     // the row can also be wider than a narrow phone
     const kids = Array.from(row.children);
@@ -509,8 +518,14 @@ function layoutMobile(textHtml, startSize, fill) {
       return;
     }
     const scale = Math.max(0.5, Math.min(1, fit));
-    // center the row in the space left below the text
-    row.style.top = Math.round(top + Math.max(0, (room - row.offsetHeight * scale) / 2)) + 'px';
+    const spare = Math.max(0, room - row.offsetHeight * scale);
+    if (spacer) {
+      spacer.style.height = Math.round(SPACER_MIN + Math.min(SPACER_MAX - SPACER_MIN, spare / scale)) + 'px';
+      row.style.top = top + 'px';
+    } else {
+      // center the row in the space left below the text
+      row.style.top = Math.round(top + spare / 2) + 'px';
+    }
     row.style.transform = scale < 1 ? `scale(${scale})` : '';
   });
   return text;
