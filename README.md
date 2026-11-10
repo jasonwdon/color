@@ -39,7 +39,7 @@ The deck runs in four sections. Each section opens with its own title slide in i
 - Context changes color: illusions like the dress and same-color squares in shadow
 
 ### 3. Color for Computers
-- Screens mix red, green and blue light (the color mixer slide) ✓
+- Screens mix red, green and blue light (the light mixing slide) ✓
 - The RGB cube: stand it on its black corner with white pointing up; looking down you see a hexagon
 - Hue: the angle around that hexagon
 - Saturation: purity; raising the lowest channel washes the color out

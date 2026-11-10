@@ -41,7 +41,8 @@ const slides = [
   { name: 'ryb',             desktop: RYBDesktop,             mobile: RYBMobile },
   { name: 'electromagnetic', desktop: ElectromagneticDesktop, mobile: ElectromagneticMobile },
   { name: 'cones',           desktop: ConesDesktop,           mobile: ConesMobile },
-  { name: 'color-mixer',     desktop: ColorMixerDesktop,      mobile: ColorMixerMobile },
+  { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile },
+  { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile },
 ];
 ```
 
@@ -93,7 +94,7 @@ export function MySlideMobile(rc, ctx, interval) {
 }
 ```
 
-**Never place mobile content at a fixed y below text.** Text wraps differently from phone to phone (and again once the Gaegu font loads), so a chart at a hardcoded y ends up on top of it. Measure instead: `TextBox` and `Slider` return their element, and `onResize([els], fn)` in `utils.js` runs `fn` now and whenever those elements change size. In `fn`, start content at `text.offsetTop + text.offsetHeight + gap`, keep it above `mobileContentBottom()` (the top of the BACK/NEXT buttons), and shrink the text or the content if a short screen can't fit both. The cones, color mixer, RYB and light slides all do this.
+**Never place mobile content at a fixed y below text.** Text wraps differently from phone to phone (and again once the Gaegu font loads), so a chart at a hardcoded y ends up on top of it. Measure instead: `TextBox` and `Slider` return their element, and `onResize([els], fn)` in `utils.js` runs `fn` now and whenever those elements change size. In `fn`, start content at `text.offsetTop + text.offsetHeight + gap`, keep it above `mobileContentBottom()` (the top of the BACK/NEXT buttons), and shrink the text or the content if a short screen can't fit both. The cones, light mixing, paint mixing and RYB slides all do this.
 
 **Cache busting:** module imports carry `?v=N` (and `index.html` loads `js/color.js?v=N` and `css/style.css?v=N`). Bump N everywhere together when you change JS, so phones don't mix cached old modules with new ones.
 
@@ -200,6 +201,8 @@ for (let px = 0; px <= w; px++) {
 
 ## Color Mixer Brush System (`colorMixer.js`)
 
+`colorMixer.js` holds two slides: light mixing (additive red/green/blue on black) and paint mixing (subtractive cyan/magenta/yellow on white, beside a rough.js diagram pairing each light primary with its opposite paint primary).
+
 **`paintBristleLine(lctx, x1, y1, x2, y2, strokeStyle, bSize)`**
 
 Draws a single brush stroke as 18 individual bristles:
@@ -209,7 +212,7 @@ Draws a single brush stroke as 18 individual bristles:
 - Each bristle is a quadratic Bézier with a random perpendicular wobble at the midpoint (`±35%` of brush size) for organic curvature
 - Per-bristle `globalAlpha` (0.07–0.29) and `lineWidth` (0.5–2.5)
 
-**`prefillVennDiagram(layers, isSubtractive, canvasW, canvasH, brushSize)`**
+**`prefillVennDiagram(layers, canvasW, canvasH, brushSize)`**
 
 Pre-paints three overlapping circles (Venn diagram) on canvas load:
 - Circle radius: `min(canvasW, canvasH) * 0.26`
@@ -218,9 +221,9 @@ Pre-paints three overlapping circles (Venn diagram) on canvas load:
 - Strokes sweep at ~135° (top-right → bottom-left) with ±0.15 rad per-stroke angle jitter
 - Step between scan lines: `2.5 ± 0.25`
 
-**RYB → RGB trilinear interpolation** (Gossett & Chen):
+**Compositing:**
 
-The 8 corners of the RYB cube are mapped to perceptually reasonable RGB values (white, red, yellow, blue, orange, purple, green, near-black). Any RYB pigment mix interpolates across all 8 corners, giving physically plausible subtractive color mixing. The subtractive layer canvases paint black-on-white; darkness encodes pigment amount (`pigment = 1 − brightness`).
+Each color paints on its own offscreen layer in its own color. Light layers start black and are combined with `globalCompositeOperation = 'lighter'` (added). Paint layers start white and are combined with `'multiply'`, so cyan over magenta leaves blue and all three make black.
 
 ---
 

@@ -1,48 +1,26 @@
-import {TextBox} from '../components.js?v=9';
-import {onResize, mobileContentBottom} from '../utils.js?v=9';
+import rough from 'https://unpkg.com/roughjs?module';
+import {TextBox} from '../components.js?v=10';
+import {onResize, mobileContentBottom} from '../utils.js?v=10';
+
+// Two slides share the mixer: light (additive, red/green/blue light on black)
+// and paint (subtractive, cyan/magenta/yellow pigment on white).
 
 // ── Color definitions ──────────────────────────────────────────────────────
 
+// text is the button label color; a few are darkened so they read on white
 const RGB_COLORS = [
-  { label: 'R', r: 255, g: 0,   b: 0   },
-  { label: 'G', r: 0,   g: 255, b: 0   },
-  { label: 'B', r: 0,   g: 0,   b: 255 },
+  { label: 'R', r: 255, g: 0,   b: 0,   text: 'rgb(255,0,0)'   },
+  { label: 'G', r: 0,   g: 255, b: 0,   text: 'rgb(0,200,0)'   },
+  { label: 'B', r: 0,   g: 0,   b: 255, text: 'rgb(0,0,255)'   },
 ];
 
-const RYB_COLORS = [
-  { label: 'R', r: 255, g: 0,   b: 0   },
-  { label: 'Y', r: 245, g: 210, b: 40  },
-  { label: 'B', r: 0,   g: 0,   b: 255 },
+const CMY_COLORS = [
+  { label: 'C', r: 0,   g: 255, b: 255, text: 'rgb(0,190,210)' },
+  { label: 'M', r: 255, g: 0,   b: 255, text: 'rgb(220,0,220)' },
+  { label: 'Y', r: 255, g: 255, b: 0,   text: 'rgb(225,195,0)' },
 ];
 
-// ── RYB → RGB trilinear interpolation ────────────────────────────────────
-
-// Corners of the RYB cube mapped to RGB (Gossett & Chen approach)
-const C000 = [255, 255, 255]; // white  (no pigment)
-const C100 = [255, 0,   0  ]; // red
-const C010 = [245, 210, 40 ]; // yellow
-const C001 = [0,   0,   255]; // blue
-const C110 = [255, 128, 0  ]; // red+yellow  = orange
-const C101 = [128, 0,   128]; // red+blue    = purple
-const C011 = [0,   130, 0  ]; // yellow+blue = green
-const C111 = [20,  20,  20 ]; // all three   ≈ black
-
-function rybToRgb(r, y, b) {
-  const result = new Array(3);
-  for (let ch = 0; ch < 3; ch++) {
-    result[ch] = Math.round(
-      C000[ch] * (1-r) * (1-y) * (1-b) +
-      C100[ch] * r     * (1-y) * (1-b) +
-      C010[ch] * (1-r) * y     * (1-b) +
-      C001[ch] * (1-r) * (1-y) * b     +
-      C110[ch] * r     * y     * (1-b) +
-      C101[ch] * r     * (1-y) * b     +
-      C011[ch] * (1-r) * y     * b     +
-      C111[ch] * r     * y     * b
-    );
-  }
-  return result;
-}
+const rgb = (c) => `rgb(${c.r},${c.g},${c.b})`;
 
 // ── Brush helpers (also used for pre-fill) ─────────────────────────────────
 
@@ -82,7 +60,7 @@ function paintBristleLine(lctx, x1, y1, x2, y2, strokeStyle, bSize) {
   lctx.restore();
 }
 
-function prefillVennDiagram(layers, isSubtractive, canvasW, canvasH, brushSize) {
+function prefillVennDiagram(layers, canvasW, canvasH, brushSize) {
   const r = Math.min(canvasW, canvasH) * 0.26;
   const d = r * 0.7;
   const cx = canvasW / 2;
@@ -97,9 +75,7 @@ function prefillVennDiagram(layers, isSubtractive, canvasW, canvasH, brushSize) 
   const cos = Math.cos(strokeAngle), sin = Math.sin(strokeAngle);
   for (let li = 0; li < layers.length; li++) {
     const layer = layers[li];
-    const strokeStyle = isSubtractive
-      ? '#000'
-      : `rgb(${layer.color.r},${layer.color.g},${layer.color.b})`;
+    const strokeStyle = rgb(layer.color);
     const { x: ccx, y: ccy } = centers[li];
     for (let u = -r; u <= r; u += 2.5 + Math.random() * 0.5) {
       const jitter = (Math.random() - 0.5) * 0.3;
@@ -114,7 +90,10 @@ function prefillVennDiagram(layers, isSubtractive, canvasW, canvasH, brushSize) 
 
 // ── Panel setup ────────────────────────────────────────────────────────────
 
-function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, fontSize) {
+// Light layers are colored light on black, added together ('lighter').
+// Paint layers are colored pigment on white, multiplied together, so cyan
+// over magenta leaves only blue, the way stacked filters or paints would.
+function makePanel(container, {title, colors, mode, canvasW, canvasH, brushSize, fontSize, clearInline}) {
   const isSubtractive = mode === 'subtractive';
   const bgColor = isSubtractive ? '#fff' : '#000';
 
@@ -138,9 +117,7 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
   ctx.fillRect(0, 0, canvasW, canvasH);
   wrapper.appendChild(canvas);
 
-  // One offscreen layer per color.
-  // Subtractive layers: white bg, paint black → darkness = pigment amount.
-  // Additive layers:    black bg, paint the RGB color → brightness = light amount.
+  // One offscreen layer per color
   const layers = colors.map(color => {
     const oc = document.createElement('canvas');
     oc.width = canvasW;
@@ -151,42 +128,13 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
     return { canvas: oc, ctx: octx, color };
   });
 
-  // ── Compositing ──────────────────────────────────────────────────────────
-
-  function compositeAdditive() {
-    ctx.fillStyle = '#000';
+  function composite() {
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvasW, canvasH);
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = isSubtractive ? 'multiply' : 'lighter';
     for (const layer of layers) ctx.drawImage(layer.canvas, 0, 0);
     ctx.restore();
-  }
-
-  function compositeSubtractive() {
-    // Read pigment amount from each layer (darkness = amount) and convert RYB→RGB
-    const layerData = layers.map(l => l.ctx.getImageData(0, 0, canvasW, canvasH).data);
-    const imgData = ctx.createImageData(canvasW, canvasH);
-    const out = imgData.data;
-    const n = canvasW * canvasH;
-    for (let i = 0; i < n; i++) {
-      const pi = i * 4;
-      // Layer pixels are painted black-on-white, so red channel = brightness.
-      // Pigment amount = 1 − brightness.
-      const rAmt = 1 - layerData[0][pi] / 255;
-      const yAmt = 1 - layerData[1][pi] / 255;
-      const bAmt = 1 - layerData[2][pi] / 255;
-      const [cr, cg, cb] = rybToRgb(rAmt, yAmt, bAmt);
-      out[pi]     = cr;
-      out[pi + 1] = cg;
-      out[pi + 2] = cb;
-      out[pi + 3] = 255;
-    }
-    ctx.putImageData(imgData, 0, 0);
-  }
-
-  function composite() {
-    if (isSubtractive) compositeSubtractive();
-    else compositeAdditive();
   }
 
   // ── Brush ────────────────────────────────────────────────────────────────
@@ -207,10 +155,7 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
 
   function paintStroke(x, y) {
     const layer = layers[currentLayerIdx];
-    const strokeStyle = isSubtractive
-      ? '#000'
-      : `rgb(${layer.color.r},${layer.color.g},${layer.color.b})`;
-    paintBristleLine(layer.ctx, lastX ?? x, lastY ?? y, x, y, strokeStyle, brushSize);
+    paintBristleLine(layer.ctx, lastX ?? x, lastY ?? y, x, y, rgb(layer.color), brushSize);
     lastX = x;
     lastY = y;
     composite();
@@ -240,29 +185,27 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
   btnRow.style.cssText = `display:flex;gap:10px;justify-content:center;align-items:center;`;
 
   // Small swatch showing active color
-  const displayColors = isSubtractive ? RYB_COLORS : colors;
   const swatch = document.createElement('div');
   swatch.className = 'object'; // fades in with the rest of the slide
-  swatch.style.cssText = `position:static;width:16px;height:16px;border-radius:50%;border:2px solid #666;flex-shrink:0;background:rgb(${displayColors[0].r},${displayColors[0].g},${displayColors[0].b});`;
+  swatch.style.cssText = `position:static;width:16px;height:16px;border-radius:50%;border:2px solid #666;flex-shrink:0;background:${rgb(colors[0])};`;
   btnRow.appendChild(swatch);
 
   colors.forEach((color, i) => {
-    const dc = displayColors[i];
     const btn = document.createElement('wired-button');
     btn.className = 'object';
     btn.innerHTML = color.label;
-    btn.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};color:rgb(${dc.r},${dc.g},${dc.b});position:static;`;
+    btn.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};color:${color.text};position:static;`;
     btn.addEventListener('click', () => {
       currentLayerIdx = i;
-      swatch.style.background = `rgb(${dc.r},${dc.g},${dc.b})`;
-      swatch.style.borderColor = `rgb(${Math.round(dc.r*0.6)},${Math.round(dc.g*0.6)},${Math.round(dc.b*0.6)})`;
+      swatch.style.background = rgb(color);
+      swatch.style.borderColor = `rgb(${Math.round(color.r*0.6)},${Math.round(color.g*0.6)},${Math.round(color.b*0.6)})`;
     });
     btnRow.appendChild(btn);
   });
 
   wrapper.appendChild(btnRow);
 
-  // Clear button
+  // Clear button, beside the colors where there's room, otherwise below them
   const clearBtn = document.createElement('wired-button');
   clearBtn.className = 'object';
   clearBtn.innerHTML = 'clear';
@@ -274,75 +217,188 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
     }
     composite();
   });
-  wrapper.appendChild(clearBtn);
+  (clearInline ? btnRow : wrapper).appendChild(clearBtn);
 
-  prefillVennDiagram(layers, isSubtractive, canvasW, canvasH, brushSize);
+  prefillVennDiagram(layers, canvasW, canvasH, brushSize);
   composite();
 
   container.appendChild(wrapper);
   return wrapper;
 }
 
+// ── Opposites diagram ──────────────────────────────────────────────────────
+
+// Red, green and blue light on the left, each paired by a two-headed arrow
+// with its opposite paint primary on the right. Drawn on its own small canvas
+// so it can sit in a flex row beside the mixer.
+const PAIRS = [
+  { light: 'red',   lightFill: 'rgb(255,0,0)', paint: 'cyan',    paintFill: 'rgb(0,255,255)' },
+  { light: 'green', lightFill: 'rgb(0,128,0)', paint: 'magenta', paintFill: 'rgb(255,0,255)' },
+  { light: 'blue',  lightFill: 'rgb(0,0,255)', paint: 'yellow',  paintFill: 'rgb(255,255,0)' },
+];
+const DIAGRAM_W = 180, DIAGRAM_H = 250;
+
+function makeOppositesDiagram(container) {
+  const dpr = window.devicePixelRatio || 1;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'object';
+  canvas.width  = DIAGRAM_W * dpr;
+  canvas.height = DIAGRAM_H * dpr;
+  canvas.style.cssText = `position:static;width:${DIAGRAM_W}px;height:${DIAGRAM_H}px;flex-shrink:0;`;
+  container.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const rc = rough.canvas(canvas);
+
+  const leftX = 40, rightX = 140, d = 40;
+  const rowY = (i) => 58 + i * 72;
+
+  function draw() {
+    ctx.clearRect(0, 0, DIAGRAM_W, DIAGRAM_H);
+    ctx.fillStyle = '#222';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 20px Gaegu, cursive';
+    ctx.fillText('light', leftX, 20);
+    ctx.fillText('paint', rightX, 20);
+
+    ctx.font = '17px Gaegu, cursive';
+    PAIRS.forEach((p, i) => {
+      const y = rowY(i);
+      const opts = {fillStyle: 'solid', strokeWidth: 2, seed: i + 1};
+      rc.circle(leftX,  y, d, {...opts, fill: p.lightFill});
+      rc.circle(rightX, y, d, {...opts, fill: p.paintFill});
+      ctx.fillText(p.light, leftX,  y + d / 2 + 17);
+      ctx.fillText(p.paint, rightX, y + d / 2 + 17);
+
+      // two-headed arrow between the circles
+      const x1 = leftX + d / 2 + 8, x2 = rightX - d / 2 - 8;
+      const line = {strokeWidth: 2, roughness: 1, seed: i + 10};
+      rc.line(x1, y, x2, y, line);
+      rc.line(x1, y, x1 + 9, y - 6, line);
+      rc.line(x1, y, x1 + 9, y + 6, line);
+      rc.line(x2, y, x2 - 9, y - 6, line);
+      rc.line(x2, y, x2 - 9, y + 6, line);
+    });
+  }
+
+  // draw now, and again once the handwriting font has loaded
+  draw();
+  document.fonts.load('17px Gaegu').then(draw, () => {});
+  return canvas;
+}
+
+// ── Text ───────────────────────────────────────────────────────────────────
+
+// color words styled like the RYB and cones slides
+const word = (color, text = color) => `<b style='color:${color}'>${text}</b>`;
+const RED = word('red'), GREEN = word('green'), BLUE = word('blue'), YELLOW = word('yellow');
+const CYAN = word('cyan'), MAGENTA = word('magenta');
+const BLACK = '<b>black</b>';
+const WHITE = "<b style='color:white; background-color:black; padding: 0 4px; border-radius: 3px;'>white</b>";
+
 // same text on phones and desktop
-const TEXT =
-  'Both systems are consistent with your cone biology. The difference is the medium.<br><br>' +
-  '<b>Screens</b> start with black and emit light. Adding R, G, B together makes white.<br><br>' +
-  '<b>Paint</b> starts with white and absorbs wavelengths. Each pigment blocks certain frequencies: mixing darkens, and the primaries are different.';
+const LIGHT_TEXT =
+  "Ah, our first conundrum. Let's clear it up.<br><br>" +
+  `The <b>true primary colors of human vision are ${RED}, ${GREEN} and ${BLUE}</b>. ` +
+  "They're the three axes our brain uses to read color.<br><br>" +
+  `With no light at all, we see ${BLACK}. Mix in these wavelengths and the magic begins.`;
+
+const PAINT_TEXT =
+  `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
+  "and each layer of paint blocks some of those wavelengths from reaching your eyes.<br><br>" +
+  `So for paint, the primaries are the opposites of ${RED}, ${GREEN} and ${BLUE}: ${CYAN}, ${MAGENTA} and ${YELLOW}. ` +
+  `We learned ${RED}, ${YELLOW} and ${BLUE} in school because they were simpler.`;
+
 const LIGHT_TITLE = 'Light mixing (additive)';
 const PAINT_TITLE = 'Paint mixing (subtractive)';
 
-// ── Desktop ────────────────────────────────────────────────────────────────
+// ── Light slide ────────────────────────────────────────────────────────────
 
-export function ColorMixerDesktop(rc, ctx, interval) {
-  const sandbox = document.getElementById('sandbox');
+export function LightMixingDesktop() {
+  TextBox({text: LIGHT_TEXT, x: 50, y: 110, w: 400, size: '25px', align: 'left', lineHeight: '1.35'});
 
-  TextBox({
-    text: TEXT,
-    x: 50, y: 50, w: 390, size: '21px', align: 'left', lineHeight: '1.35',
-  });
-
-  const row = document.createElement('div');
-  row.style.cssText = `position:absolute;left:460px;top:50px;display:flex;gap:40px;align-items:flex-start;`;
-  sandbox.appendChild(row);
-
-  makePanel(row, LIGHT_TITLE, RGB_COLORS, 'additive',    190, 210, 38, '20px');
-  makePanel(row, PAINT_TITLE, RYB_COLORS, 'subtractive', 190, 210, 38, '20px');
+  const row = rightColumn();
+  makePanel(row, {title: LIGHT_TITLE, colors: RGB_COLORS, mode: 'additive',
+    canvasW: 330, canvasH: 330, brushSize: 50, fontSize: '22px', clearInline: true});
 }
 
-// ── Mobile ─────────────────────────────────────────────────────────────────
+export function LightMixingMobile() {
+  const W = window.innerWidth;
+  const side = Math.min(300, W - 40);
+  layoutMobile(LIGHT_TEXT, 21, (row) => {
+    makePanel(row, {title: LIGHT_TITLE, colors: RGB_COLORS, mode: 'additive',
+      canvasW: side, canvasH: side, brushSize: 40, fontSize: '20px', clearInline: true});
+  });
+}
 
-export function ColorMixerMobile(rc, ctx, interval) {
+// ── Paint slide ────────────────────────────────────────────────────────────
+
+export function PaintMixingDesktop() {
+  TextBox({text: PAINT_TEXT, x: 50, y: 90, w: 390, size: '23px', align: 'left', lineHeight: '1.35'});
+
+  const row = rightColumn();
+  row.style.gap = '20px';
+  row.style.alignItems = 'center';
+  makeOppositesDiagram(row);
+  makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
+    canvasW: 250, canvasH: 280, brushSize: 42, fontSize: '20px', clearInline: false});
+}
+
+export function PaintMixingMobile() {
+  const W = window.innerWidth;
+  const panelW = Math.min(190, W - DIAGRAM_W - 25);
+  layoutMobile(PAINT_TEXT, 19, (row) => {
+    row.style.alignItems = 'center';
+    makeOppositesDiagram(row);
+    makePanel(row, {title: 'Paint mixing<br>(subtractive)', colors: CMY_COLORS, mode: 'subtractive',
+      canvasW: panelW, canvasH: 190, brushSize: 28, fontSize: '18px', clearInline: false});
+  });
+}
+
+// ── Layout helpers ─────────────────────────────────────────────────────────
+
+// desktop: the mixer (and diagram) centered in the space right of the text,
+// above the BACK/NEXT buttons
+function rightColumn() {
+  const row = document.createElement('div');
+  row.style.cssText = `position:absolute;left:470px;width:500px;top:50px;height:440px;display:flex;gap:10px;justify-content:center;align-items:center;`;
+  document.getElementById('sandbox').appendChild(row);
+  return row;
+}
+
+// phones: text at the top, then a row of content below wherever the text
+// actually ends. On short screens the text shrinks a little first, then the
+// row shrinks to fit above the buttons.
+function layoutMobile(textHtml, startSize, fill) {
   const sandbox = document.getElementById('sandbox');
   const W = window.innerWidth;
 
-  let fontSize = 20;
-  const text = TextBox({
-    text: TEXT,
-    x: 15, y: 20, w: W - 30, size: fontSize + 'px', align: 'left', lineHeight: '1.25',
-  });
-
-  const panelW = Math.min(Math.floor((W - 30) / 2), 160);
+  let fontSize = startSize;
+  const text = TextBox({text: textHtml, x: 15, y: 20, w: W - 30,
+    size: fontSize + 'px', align: 'left', lineHeight: '1.25'});
 
   const row = document.createElement('div');
   row.style.cssText = `position:absolute;left:0;right:0;display:flex;gap:10px;justify-content:center;align-items:flex-start;transform-origin:top center;`;
   sandbox.appendChild(row);
+  fill(row);
 
-  makePanel(row, LIGHT_TITLE, RGB_COLORS, 'additive',    panelW, 170, 25, '18px');
-  makePanel(row, PAINT_TITLE, RYB_COLORS, 'subtractive', panelW, 170, 25, '18px');
-
-  // The text wraps differently from phone to phone, so the panels start below
-  // wherever it actually ends. On short screens the text shrinks a little
-  // first, then the panels shrink to fit above the buttons.
   onResize([text, row], () => {
-    const top = text.offsetTop + text.offsetHeight + 12;
-    const fit = (mobileContentBottom() - top) / row.offsetHeight;
+    const top = text.offsetTop + text.offsetHeight + 14;
+    const room = mobileContentBottom() - top;
+    // the row can also be wider than a narrow phone
+    const kids = Array.from(row.children);
+    const rowW = kids.reduce((w, k) => w + k.offsetWidth, 0) + 10 * (kids.length - 1);
+    const fit = Math.min(room / row.offsetHeight, (W - 10) / rowW);
     if (fit < 0.85 && fontSize > 16) {
       fontSize -= 1;
       text.style.fontSize = fontSize + 'px';
       return;
     }
     const scale = Math.max(0.5, Math.min(1, fit));
-    row.style.top = top + 'px';
+    // center the row in the space left below the text
+    row.style.top = Math.round(top + Math.max(0, (room - row.offsetHeight * scale) / 2)) + 'px';
     row.style.transform = scale < 1 ? `scale(${scale})` : '';
   });
 }
