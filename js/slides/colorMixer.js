@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=16';
-import {onResize, mobileContentBottom} from '../utils.js?v=16';
+import {TextBox} from '../components.js?v=17';
+import {onResize, mobileContentBottom} from '../utils.js?v=17';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -370,7 +370,7 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  TextBox({text: PAINT_TEXT, x: 50, y: 100, w: 400, size: '23px', align: 'left', lineHeight: '1.35'});
+  TextBox({text: PAINT_TEXT, x: 50, y: 70, w: 400, size: '23px', align: 'left', lineHeight: '1.35'});
 
   // the arrows diagram sits right above the mixer
   const row = rightColumn();
@@ -378,7 +378,7 @@ export function PaintMixingDesktop() {
   row.style.gap = '6px';
   makeOppositesDiagram(row);
   makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 360, canvasH: 200, brushSize: 38, fontSize: '20px', clearInline: true});
+    canvasW: 360, canvasH: 185, brushSize: 38, fontSize: '20px', clearInline: true});
 }
 
 export function PaintMixingMobile() {
