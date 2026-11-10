@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=20';
-import {onResize, mobileContentBottom} from '../utils.js?v=20';
+import {TextBox} from '../components.js?v=21';
+import {onResize, mobileContentBottom} from '../utils.js?v=21';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -275,79 +275,44 @@ const PAINTS = [
 ];
 // [light index, paint index]
 const ARROWS = [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1], [2, 2]];
-const DIAGRAM_W = 250, DIAGRAM_H = 116;
+const DIAGRAM_W = 205, DIAGRAM_H = 92;
 
-// noteHtml goes in a popup that a small * button beside "paint" opens and
-// closes, so it takes no room until someone asks for it.
-function makeOppositesDiagram(container, noteHtml) {
-  const box = document.createElement('div');
-  box.style.cssText = `position:relative;width:${DIAGRAM_W}px;height:${DIAGRAM_H}px;flex-shrink:0;`;
-  container.appendChild(box);
-
+function makeOppositesDiagram(container) {
   const dpr = window.devicePixelRatio || 1;
   const canvas = document.createElement('canvas');
   canvas.className = 'object';
   canvas.width  = DIAGRAM_W * dpr;
   canvas.height = DIAGRAM_H * dpr;
-  canvas.style.cssText = `position:static;display:block;width:${DIAGRAM_W}px;height:${DIAGRAM_H}px;`;
-  box.appendChild(canvas);
-
-  const star = document.createElement('button');
-  star.className = 'object note-star';
-  star.type = 'button';
-  star.textContent = '*';
-  star.setAttribute('aria-label', 'Why red, yellow and blue?');
-  star.setAttribute('aria-expanded', 'false');
-  box.appendChild(star);
-
-  const note = document.createElement('div');
-  note.className = 'note-popup';
-  note.innerHTML = noteHtml;
-  note.hidden = true;
-  box.appendChild(note);
-
-  const setOpen = (open) => {
-    note.hidden = !open;
-    star.setAttribute('aria-expanded', String(open));
-  };
-  star.addEventListener('click', () => setOpen(note.hidden));
-  // a tap anywhere else closes it
-  const closeOutside = (e) => {
-    if (!box.isConnected) return document.removeEventListener('pointerdown', closeOutside);
-    if (!note.hidden && !star.contains(e.target) && !note.contains(e.target)) setOpen(false);
-  };
-  document.addEventListener('pointerdown', closeOutside);
+  canvas.style.cssText = `position:static;display:block;width:${DIAGRAM_W}px;height:${DIAGRAM_H}px;flex-shrink:0;`;
+  container.appendChild(canvas);
 
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   const rc = rough.canvas(canvas);
 
-  const colX = (i) => 92 + i * 66;
-  const topY = 30, bottomY = 84, d = 24;
+  const colX = (i) => 74 + i * 54;
+  const topY = 24, bottomY = 66, d = 20;
 
   function draw() {
     ctx.clearRect(0, 0, DIAGRAM_W, DIAGRAM_H);
     ctx.fillStyle = '#222';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
-    ctx.font = 'bold 18px Gaegu, cursive';
+    ctx.font = 'bold 16px Gaegu, cursive';
     ctx.fillText('light', 4, topY);
     ctx.fillText('paint', 4, bottomY);
-    // the * button sits just after the word "paint"
-    star.style.left = Math.round(4 + ctx.measureText('paint').width + 2) + 'px';
-    star.style.top = (bottomY - 11) + 'px';
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    ctx.font = '15px Gaegu, cursive';
+    ctx.font = '13px Gaegu, cursive';
     const circle = {fillStyle: 'solid', strokeWidth: 2};
     LIGHTS.forEach((c, i) => {
       rc.circle(colX(i), topY, d, {...circle, fill: c.fill, seed: i + 1});
-      ctx.fillText(c.name, colX(i), topY - d / 2 - 5);
+      ctx.fillText(c.name, colX(i), topY - d / 2 - 4);
     });
     PAINTS.forEach((c, i) => {
       rc.circle(colX(i), bottomY, d, {...circle, fill: c.fill, seed: i + 4});
-      ctx.fillText(c.name, colX(i), bottomY + d / 2 + 14);
+      ctx.fillText(c.name, colX(i), bottomY + d / 2 + 12);
     });
 
     // arrows from each light down to the paints it makes, in the light's color
@@ -355,7 +320,7 @@ function makeOppositesDiagram(container, noteHtml) {
       const x1 = colX(li), y1 = topY, x2 = colX(pi), y2 = bottomY;
       const len = Math.hypot(x2 - x1, y2 - y1);
       const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
-      const gap = d / 2 + 4;
+      const gap = d / 2 + 3;
       const sx = x1 + ux * gap, sy = y1 + uy * gap;
       const ex = x2 - ux * gap, ey = y2 - uy * gap;
       const line = {stroke: LIGHTS[li].fill, strokeWidth: 2, roughness: 1, seed: k + 10};
@@ -364,15 +329,15 @@ function makeOppositesDiagram(container, noteHtml) {
       for (const a of [0.5, -0.5]) {
         const cos = Math.cos(a), sin = Math.sin(a);
         const bx = -(ux * cos - uy * sin), by = -(ux * sin + uy * cos);
-        rc.line(ex, ey, ex + bx * 7, ey + by * 7, line);
+        rc.line(ex, ey, ex + bx * 6, ey + by * 6, line);
       }
     });
   }
 
   // draw now, and again once the handwriting font has loaded
   draw();
-  document.fonts.load('17px Gaegu').then(draw, () => {});
-  return box;
+  document.fonts.load('13px Gaegu').then(draw, () => {});
+  return canvas;
 }
 
 // ── Text ───────────────────────────────────────────────────────────────────
@@ -395,10 +360,10 @@ const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
   "and each layer of paint blocks some of those wavelengths from reaching your eyes. " +
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
-  `and together they read as ${MAGENTA}.`;
-
-// the popup behind the * beside "paint" in the arrows diagram
-const PAINT_NOTE = `In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.`;
+  `and together they read as <span class='note-anchor'>${MAGENTA}<button type='button' class='note-star' ` +
+  `aria-label='Why red, yellow and blue?' aria-expanded='false'>*</button>` +
+  `<span class='note-popup' hidden>In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.</span>` +
+  `</span>.`;
 
 const LIGHT_TITLE = 'Light mixing (additive)';
 const PAINT_TITLE = 'Paint mixing (subtractive)';
@@ -425,32 +390,59 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  TextBox({text: PAINT_TEXT, x: 50, y: 130, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
+  const text = TextBox({text: PAINT_TEXT, x: 50, y: 130, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
+  setupNote(text);
 
-  // the arrows diagram sits right above the mixer
+  // the arrows diagram sits right above the mixer, both from the top
   const row = rightColumn();
   row.style.flexDirection = 'column';
+  row.style.justifyContent = 'flex-start';
+  row.style.top = '60px';
   row.style.gap = '6px';
-  makeOppositesDiagram(row, PAINT_NOTE);
+  makeOppositesDiagram(row);
   makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 360, canvasH: 200, brushSize: 38, fontSize: '20px', clearInline: true});
+    canvasW: 360, canvasH: 230, brushSize: 38, fontSize: '20px', clearInline: true});
 }
 
 export function PaintMixingMobile() {
   const W = window.innerWidth;
   const canvasW = Math.min(300, W - 40);
-  layoutMobile(PAINT_TEXT, 19, (row) => {
+  const text = layoutMobile(PAINT_TEXT, 19, (row) => {
     // one column: the arrows diagram right above the mixer
     const col = document.createElement('div');
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
     row.appendChild(col);
-    makeOppositesDiagram(col, PAINT_NOTE);
+    makeOppositesDiagram(col);
     makePanel(col, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-      canvasW, canvasH: 160, brushSize: 28, fontSize: '18px', clearInline: true});
+      canvasW, canvasH: 190, brushSize: 28, fontSize: '18px', clearInline: true});
   });
+  setupNote(text);
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
+
+// Wires up a clickable * (.note-star) in el: it opens and closes its
+// .note-popup, and a tap anywhere else closes it. The popup floats, so
+// nothing moves, and it shifts left if it would run off the slide.
+function setupNote(el) {
+  const star = el.querySelector('.note-star');
+  const note = el.querySelector('.note-popup');
+  const setOpen = (open) => {
+    note.hidden = !open;
+    star.setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    note.style.left = '0px';
+    const sandbox = document.getElementById('sandbox').getBoundingClientRect();
+    const overflow = note.getBoundingClientRect().right - (sandbox.right - 8);
+    if (overflow > 0) note.style.left = -Math.ceil(overflow) + 'px';
+  };
+  star.addEventListener('click', () => setOpen(note.hidden));
+  const closeOutside = (e) => {
+    if (!el.isConnected) return document.removeEventListener('pointerdown', closeOutside);
+    if (!note.hidden && !star.contains(e.target) && !note.contains(e.target)) setOpen(false);
+  };
+  document.addEventListener('pointerdown', closeOutside);
+}
 
 // desktop: the mixer (and diagram) centered in the space right of the text,
 // above the BACK/NEXT buttons
@@ -494,4 +486,5 @@ function layoutMobile(textHtml, startSize, fill) {
     row.style.top = Math.round(top + Math.max(0, (room - row.offsetHeight * scale) / 2)) + 'px';
     row.style.transform = scale < 1 ? `scale(${scale})` : '';
   });
+  return text;
 }

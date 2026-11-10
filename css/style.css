@@ -173,23 +173,30 @@ wired-button:hover {
   line-height: 1;
 }
 
-/* the * beside "paint" in the paint slide's arrows diagram, and the note it
-   opens. The note floats over what's below, so opening it moves nothing. */
+/* the * after "magenta" on the paint slide, and the note it opens. The note floats over what's below, so opening it moves nothing. */
+.note-anchor {
+  position: relative;
+  white-space: nowrap;
+}
+
 .note-star {
-  width: 22px;
-  height: 22px;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
   padding: 0;
+  vertical-align: 0.35em;
   border: 1.5px solid #444;
   border-radius: 50%;
   background: #fff;
   color: #c00;
   font-family: Gaegu, cursive;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bold;
-  line-height: 28px;
+  line-height: 26px;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 0.1s; /* not the slide-in on left that .object has */
+  transition: transform 0.1s;
 }
 
 .note-star:hover {
@@ -199,9 +206,10 @@ wired-button:hover {
 .note-popup {
   position: absolute;
   left: 0;
-  top: calc(100% + 2px);
+  top: calc(100% + 4px);
   z-index: 10;
   width: 240px;
+  white-space: normal;
   padding: 8px 12px;
   background: #fff;
   border: 2px solid #444;

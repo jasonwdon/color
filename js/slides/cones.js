@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js?v=20';
-import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=20';
+import {TextBox, Slider} from '../components.js?v=21';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=21';
 
 const DELAY = 50;
 const GRAPH_MIN = 400, GRAPH_MAX = 650;
