@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=19';
-import {onResize, mobileContentBottom} from '../utils.js?v=19';
+import {TextBox} from '../components.js?v=20';
+import {onResize, mobileContentBottom} from '../utils.js?v=20';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -277,14 +277,46 @@ const PAINTS = [
 const ARROWS = [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1], [2, 2]];
 const DIAGRAM_W = 250, DIAGRAM_H = 116;
 
-function makeOppositesDiagram(container) {
+// noteHtml goes in a popup that a small * button beside "paint" opens and
+// closes, so it takes no room until someone asks for it.
+function makeOppositesDiagram(container, noteHtml) {
+  const box = document.createElement('div');
+  box.style.cssText = `position:relative;width:${DIAGRAM_W}px;height:${DIAGRAM_H}px;flex-shrink:0;`;
+  container.appendChild(box);
+
   const dpr = window.devicePixelRatio || 1;
   const canvas = document.createElement('canvas');
   canvas.className = 'object';
   canvas.width  = DIAGRAM_W * dpr;
   canvas.height = DIAGRAM_H * dpr;
-  canvas.style.cssText = `position:static;width:${DIAGRAM_W}px;height:${DIAGRAM_H}px;flex-shrink:0;`;
-  container.appendChild(canvas);
+  canvas.style.cssText = `position:static;display:block;width:${DIAGRAM_W}px;height:${DIAGRAM_H}px;`;
+  box.appendChild(canvas);
+
+  const star = document.createElement('button');
+  star.className = 'object note-star';
+  star.type = 'button';
+  star.textContent = '*';
+  star.setAttribute('aria-label', 'Why red, yellow and blue?');
+  star.setAttribute('aria-expanded', 'false');
+  box.appendChild(star);
+
+  const note = document.createElement('div');
+  note.className = 'note-popup';
+  note.innerHTML = noteHtml;
+  note.hidden = true;
+  box.appendChild(note);
+
+  const setOpen = (open) => {
+    note.hidden = !open;
+    star.setAttribute('aria-expanded', String(open));
+  };
+  star.addEventListener('click', () => setOpen(note.hidden));
+  // a tap anywhere else closes it
+  const closeOutside = (e) => {
+    if (!box.isConnected) return document.removeEventListener('pointerdown', closeOutside);
+    if (!note.hidden && !star.contains(e.target) && !note.contains(e.target)) setOpen(false);
+  };
+  document.addEventListener('pointerdown', closeOutside);
 
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
@@ -300,7 +332,10 @@ function makeOppositesDiagram(container) {
     ctx.textAlign = 'left';
     ctx.font = 'bold 18px Gaegu, cursive';
     ctx.fillText('light', 4, topY);
-    ctx.fillText('paint*', 4, bottomY);
+    ctx.fillText('paint', 4, bottomY);
+    // the * button sits just after the word "paint"
+    star.style.left = Math.round(4 + ctx.measureText('paint').width + 2) + 'px';
+    star.style.top = (bottomY - 11) + 'px';
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
@@ -337,7 +372,7 @@ function makeOppositesDiagram(container) {
   // draw now, and again once the handwriting font has loaded
   draw();
   document.fonts.load('17px Gaegu').then(draw, () => {});
-  return canvas;
+  return box;
 }
 
 // ── Text ───────────────────────────────────────────────────────────────────
@@ -362,12 +397,8 @@ const PAINT_TEXT =
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
   `and together they read as ${MAGENTA}.`;
 
-// a footnote under the arrows diagram, tied to the asterisk on "paint*"
-// plain yellow is hard to read in small type, so the footnote's is darker
-const tint = (color, text = color) => `<span style='color:${color}'>${text}</span>`;
-const PAINT_FOOTNOTE =
-  `* In school, we learned ${tint('red')}, ${tint('#d4b000', 'yellow')} and ${tint('blue')} ` +
-  'because it was simpler.';
+// the popup behind the * beside "paint" in the arrows diagram
+const PAINT_NOTE = `In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.`;
 
 const LIGHT_TITLE = 'Light mixing (additive)';
 const PAINT_TITLE = 'Paint mixing (subtractive)';
@@ -396,12 +427,11 @@ export function LightMixingMobile() {
 export function PaintMixingDesktop() {
   TextBox({text: PAINT_TEXT, x: 50, y: 130, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
 
-  // the arrows diagram and its footnote sit right above the mixer
+  // the arrows diagram sits right above the mixer
   const row = rightColumn();
   row.style.flexDirection = 'column';
   row.style.gap = '6px';
-  makeOppositesDiagram(row);
-  footnote(row, PAINT_FOOTNOTE, '16px');
+  makeOppositesDiagram(row, PAINT_NOTE);
   makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
     canvasW: 360, canvasH: 200, brushSize: 38, fontSize: '20px', clearInline: true});
 }
@@ -414,24 +444,13 @@ export function PaintMixingMobile() {
     const col = document.createElement('div');
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
     row.appendChild(col);
-    makeOppositesDiagram(col);
-    footnote(col, PAINT_FOOTNOTE, '14px');
+    makeOppositesDiagram(col, PAINT_NOTE);
     makePanel(col, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
       canvasW, canvasH: 160, brushSize: 28, fontSize: '18px', clearInline: true});
   });
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
-
-// small muted line, e.g. the footnote under the arrows diagram
-function footnote(container, html, fontSize) {
-  const el = document.createElement('div');
-  el.className = 'object textbox'; // fades in with the rest of the slide
-  el.innerHTML = html;
-  el.style.cssText = `position:static;font-size:${fontSize};line-height:1.2;color:#666;text-align:center;max-width:380px;`;
-  container.appendChild(el);
-  return el;
-}
 
 // desktop: the mixer (and diagram) centered in the space right of the text,
 // above the BACK/NEXT buttons
