@@ -201,7 +201,7 @@ for (let px = 0; px <= w; px++) {
 
 ## Color Mixer Brush System (`colorMixer.js`)
 
-`colorMixer.js` holds two slides: light mixing (additive red/green/blue on black) and paint mixing (subtractive cyan/magenta/yellow on white, under a rough.js diagram pairing each light primary with its opposite paint primary).
+`colorMixer.js` holds two slides: light mixing (additive red/green/blue on black) and paint mixing (subtractive cyan/magenta/yellow on white, under a rough.js diagram with arrows from each light primary to the two paint primaries it makes).
 
 **`paintBristleLine(lctx, x1, y1, x2, y2, strokeStyle, bSize)`**
 

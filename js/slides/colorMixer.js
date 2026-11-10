@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=17';
-import {onResize, mobileContentBottom} from '../utils.js?v=17';
+import {TextBox} from '../components.js?v=18';
+import {onResize, mobileContentBottom} from '../utils.js?v=18';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -259,14 +259,22 @@ function makeDrawHint(container, color) {
 
 // ── Opposites diagram ──────────────────────────────────────────────────────
 
-// Red, green and blue light across the top, each paired by a two-headed
-// arrow with its opposite paint primary underneath. Drawn on its own small
-// canvas so it can sit above the mixer.
-const PAIRS = [
-  { light: 'red',   lightFill: 'rgb(255,0,0)', paint: 'cyan',    paintFill: 'rgb(0,255,255)' },
-  { light: 'green', lightFill: 'rgb(0,128,0)', paint: 'magenta', paintFill: 'rgb(255,0,255)' },
-  { light: 'blue',  lightFill: 'rgb(0,0,255)', paint: 'yellow',  paintFill: 'rgb(255,255,0)' },
+// Red, green and blue light across the top, cyan, magenta and yellow paint
+// underneath, with an arrow from each light primary to the two paint
+// primaries it's part of. The bottom row is in the order (yellow, magenta,
+// cyan) that keeps the arrows shortest and crossing least.
+const LIGHTS = [
+  { name: 'red',   fill: 'rgb(255,0,0)' },
+  { name: 'green', fill: 'rgb(0,128,0)' },
+  { name: 'blue',  fill: 'rgb(0,0,255)' },
 ];
+const PAINTS = [
+  { name: 'yellow',  fill: 'rgb(255,255,0)' }, // red + green
+  { name: 'magenta', fill: 'rgb(255,0,255)' }, // red + blue
+  { name: 'cyan',    fill: 'rgb(0,255,255)' }, // green + blue
+];
+// [light index, paint index]
+const ARROWS = [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1], [2, 2]];
 const DIAGRAM_W = 280, DIAGRAM_H = 148;
 
 function makeOppositesDiagram(container) {
@@ -297,22 +305,32 @@ function makeOppositesDiagram(container) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.font = '17px Gaegu, cursive';
-    PAIRS.forEach((p, i) => {
-      const x = colX(i);
-      const opts = {fillStyle: 'solid', strokeWidth: 2, seed: i + 1};
-      rc.circle(x, topY,    d, {...opts, fill: p.lightFill});
-      rc.circle(x, bottomY, d, {...opts, fill: p.paintFill});
-      ctx.fillText(p.light, x, topY - d / 2 - 6);
-      ctx.fillText(p.paint, x, bottomY + d / 2 + 16);
+    const circle = {fillStyle: 'solid', strokeWidth: 2};
+    LIGHTS.forEach((c, i) => {
+      rc.circle(colX(i), topY, d, {...circle, fill: c.fill, seed: i + 1});
+      ctx.fillText(c.name, colX(i), topY - d / 2 - 6);
+    });
+    PAINTS.forEach((c, i) => {
+      rc.circle(colX(i), bottomY, d, {...circle, fill: c.fill, seed: i + 4});
+      ctx.fillText(c.name, colX(i), bottomY + d / 2 + 16);
+    });
 
-      // two-headed arrow between the circles
-      const y1 = topY + d / 2 + 6, y2 = bottomY - d / 2 - 6;
-      const line = {strokeWidth: 2, roughness: 1, seed: i + 10};
-      rc.line(x, y1, x, y2, line);
-      rc.line(x, y1, x - 6, y1 + 8, line);
-      rc.line(x, y1, x + 6, y1 + 8, line);
-      rc.line(x, y2, x - 6, y2 - 8, line);
-      rc.line(x, y2, x + 6, y2 - 8, line);
+    // arrows from each light down to the paints it makes, in the light's color
+    ARROWS.forEach(([li, pi], k) => {
+      const x1 = colX(li), y1 = topY, x2 = colX(pi), y2 = bottomY;
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+      const gap = d / 2 + 5;
+      const sx = x1 + ux * gap, sy = y1 + uy * gap;
+      const ex = x2 - ux * gap, ey = y2 - uy * gap;
+      const line = {stroke: LIGHTS[li].fill, strokeWidth: 2, roughness: 1, seed: k + 10};
+      rc.line(sx, sy, ex, ey, line);
+      // arrowhead: two short strokes back from the tip, 28 degrees either side
+      for (const a of [0.5, -0.5]) {
+        const cos = Math.cos(a), sin = Math.sin(a);
+        const bx = -(ux * cos - uy * sin), by = -(ux * sin + uy * cos);
+        rc.line(ex, ey, ex + bx * 9, ey + by * 9, line);
+      }
     });
   }
 
