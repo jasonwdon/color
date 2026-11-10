@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js?v=2';
-import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=2';
+import {TextBox, Slider} from '../components.js?v=3';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=3';
 
 const DELAY = 100;
 
@@ -70,8 +70,8 @@ function setupEM(rc, ctx, interval, L) {
   interval.id = setInterval(drawElectromagnetic.bind(null, ctx, rc, L), DELAY);
 
   const text = TextBox({id: 'electromagnetic-text', text:
-    "Later on, we learn that color is light reflecting off of objects at different intensities.<br><br>" +
-    "Our eyes interpret this light and send signals to the brain.<br><br>" +
+    "Later on, we learn that color is <span class='rays'>light</span> reflecting off of objects at different intensities.<br><br>" +
+    "Our eyes interpret this and send signals to the brain.<br><br>" +
     "At different wavelengths, we see different colors.",
     x: L.textX, y: L.textY, w: L.textW, size: L.textSize, align: 'left'});
 

@@ -100,3 +100,35 @@ wired-button:hover {
   top: 500px;
   font-size: 30px;
 }
+
+/* hand drawn rays fanning up out of a word, e.g. <span class="rays">light</span>.
+   The burst box is the word's box grown by 20% on each side and 50% above.
+   The rays stay above the word and away from its neighbors on the same line,
+   and sit behind the text so nothing becomes harder to read. */
+.rays {
+  position: relative;
+  display: inline-block;
+}
+
+.rays::before {
+  content: '';
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  top: -50%;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100' preserveAspectRatio='none'%3E%3Cpath d='M40 46Q26 40 14 31M62 46Q54 33 44 22M84 46Q78 32 75 17M100 46Q101 31 100 16M116 46Q119 31 125 17M138 46Q148 35 156 22M160 46Q172 37 186 31M25 60Q17 53 7 49M26 76Q16 76 6 74M175 60Q183 53 193 49M174 76Q184 76 194 74' fill='none' stroke='%23f0a500' stroke-width='2' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  transform-origin: 50% 100%;
+  animation: rays-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes rays-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.95); }
+  50%      { opacity: 1;    transform: scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rays::before { animation: none; }
+}

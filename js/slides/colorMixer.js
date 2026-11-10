@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=2';
-import {onResize, mobileContentBottom} from '../utils.js?v=2';
+import {TextBox} from '../components.js?v=3';
+import {onResize, mobileContentBottom} from '../utils.js?v=3';
 
 // ── Color definitions ──────────────────────────────────────────────────────
 
@@ -281,15 +281,21 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
   return wrapper;
 }
 
+// same text on phones and desktop
+const TEXT =
+  'Both systems are consistent with your cone biology. The difference is the medium.<br><br>' +
+  '<b>Screens</b> start with black and emit light. Adding R, G, B together makes white.<br><br>' +
+  '<b>Paint</b> starts with white and absorbs wavelengths. Each pigment blocks certain frequencies: mixing darkens, and the primaries are different.';
+const LIGHT_TITLE = 'Light mixing (additive)';
+const PAINT_TITLE = 'Paint mixing (subtractive)';
+
 // ── Desktop ────────────────────────────────────────────────────────────────
 
 export function ColorMixerDesktop(rc, ctx, interval) {
   const sandbox = document.getElementById('sandbox');
 
   TextBox({
-    text: 'Both systems are consistent with your cone biology. The difference is the medium.<br><br>' +
-          '<b>Screens</b> start with black and emit light. Adding R, G, B together makes white.<br><br>' +
-          '<b>Paint</b> starts with white and absorbs wavelengths. Each pigment blocks certain frequencies: mixing darkens, and the primaries are different.',
+    text: TEXT,
     x: 50, y: 50, w: 390, size: '21px', align: 'left', lineHeight: '1.35',
   });
 
@@ -297,8 +303,8 @@ export function ColorMixerDesktop(rc, ctx, interval) {
   row.style.cssText = `position:absolute;left:460px;top:50px;display:flex;gap:40px;align-items:flex-start;`;
   sandbox.appendChild(row);
 
-  makePanel(row, 'Light mixing (additive)',    RGB_COLORS, 'additive',    190, 210, 38, '20px');
-  makePanel(row, 'Paint mixing (subtractive)', RYB_COLORS, 'subtractive', 190, 210, 38, '20px');
+  makePanel(row, LIGHT_TITLE, RGB_COLORS, 'additive',    190, 210, 38, '20px');
+  makePanel(row, PAINT_TITLE, RYB_COLORS, 'subtractive', 190, 210, 38, '20px');
 }
 
 // ── Mobile ─────────────────────────────────────────────────────────────────
@@ -307,11 +313,10 @@ export function ColorMixerMobile(rc, ctx, interval) {
   const sandbox = document.getElementById('sandbox');
   const W = window.innerWidth;
 
+  let fontSize = 20;
   const text = TextBox({
-    text: 'Same cones, different medium.<br>' +
-          '<b>Screens</b> emit light on black: R+G+B → white.<br>' +
-          '<b>Paint</b> absorbs wavelengths from white. Mixing blocks frequencies.',
-    x: 10, y: 55, w: W - 20, size: '20px', align: 'left', lineHeight: '1.3',
+    text: TEXT,
+    x: 15, y: 20, w: W - 30, size: fontSize + 'px', align: 'left', lineHeight: '1.25',
   });
 
   const panelW = Math.min(Math.floor((W - 30) / 2), 160);
@@ -320,14 +325,21 @@ export function ColorMixerMobile(rc, ctx, interval) {
   row.style.cssText = `position:absolute;left:0;right:0;display:flex;gap:10px;justify-content:center;align-items:flex-start;transform-origin:top center;`;
   sandbox.appendChild(row);
 
-  makePanel(row, 'Light<br>(additive)',    RGB_COLORS, 'additive',    panelW, 170, 25, '18px');
-  makePanel(row, 'Paint<br>(subtractive)', RYB_COLORS, 'subtractive', panelW, 170, 25, '18px');
+  makePanel(row, LIGHT_TITLE, RGB_COLORS, 'additive',    panelW, 170, 25, '18px');
+  makePanel(row, PAINT_TITLE, RYB_COLORS, 'subtractive', panelW, 170, 25, '18px');
 
   // The text wraps differently from phone to phone, so the panels start below
-  // wherever it actually ends, and shrink if the screen is too short for them.
+  // wherever it actually ends. On short screens the text shrinks a little
+  // first, then the panels shrink to fit above the buttons.
   onResize([text, row], () => {
     const top = text.offsetTop + text.offsetHeight + 12;
-    const scale = Math.max(0.5, Math.min(1, (mobileContentBottom() - top) / row.offsetHeight));
+    const fit = (mobileContentBottom() - top) / row.offsetHeight;
+    if (fit < 0.85 && fontSize > 16) {
+      fontSize -= 1;
+      text.style.fontSize = fontSize + 'px';
+      return;
+    }
+    const scale = Math.max(0.5, Math.min(1, fit));
     row.style.top = top + 'px';
     row.style.transform = scale < 1 ? `scale(${scale})` : '';
   });

@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js?v=2';
-import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=2';
+import {TextBox, Slider} from '../components.js?v=3';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=3';
 
 const DELAY = 50;
 const GRAPH_MIN = 400, GRAPH_MAX = 650;
@@ -14,9 +14,17 @@ function sensitivity(wl, peak, sigma) {
   return Math.exp(-((wl - peak) ** 2) / (2 * sigma * sigma));
 }
 
+// color words styled like the RYB and title slides
+const RED    = "<b style='color:red'>red</b>";
+const GREEN  = "<b style='color:green'>green</b>";
+const BLUE   = "<b style='color:blue'>blue</b>";
+const YELLOW = "<b style='color:yellow'>yellow</b>";
+
+// same text on phones and desktop
 const TEXT =
-  "We also learn that our eyes have three types of cone cells.<br><br>" +
-  "Each responds to a different range of wavelengths, and together they create our perception of color.<br><br>";
+  "The eyes turn <span class='rays'>light</span> into brain signals using 3 types of cone cells.<br><br>" +
+  "Each responds to a different range of wavelengths, and together they create our perception of color.<br><br>" +
+  `But wait: ${RED}, ${GREEN}, ${BLUE}?<br>Isn't that supposed to be ${RED}, ${YELLOW}, ${BLUE}?`;
 
 // all x/y values are sandbox coords; the draw code converts them to canvas coords
 const DESKTOP_L = {
@@ -25,7 +33,6 @@ const DESKTOP_L = {
   sliderX: 490, sliderY: 455, sliderW: 400,
   rainbowH: 18,
   labelSize: 20,
-  waitText: "But wait: red, green, blue?<br>Isn't that supposed to be red, <b>yellow</b>, blue?",
 };
 
 const MOBILE_L = {
@@ -33,7 +40,6 @@ const MOBILE_L = {
   graphH: 75, graphGap: 100,
   rainbowH: 14,
   labelSize: 18,
-  waitText: "But wait... isn't it red, yellow, blue?",
 };
 
 export function ConesDesktop(rc, ctx, interval) {
@@ -78,7 +84,7 @@ export function ConesMobile(rc, ctx, interval) {
 }
 
 function setupCones(rc, ctx, interval, config, L = config) {
-  const text = TextBox({text: TEXT + config.waitText,
+  const text = TextBox({text: TEXT,
     x: config.textX, y: config.textY, w: config.textW, size: config.textSize, align: 'left'});
 
   const slider = Slider({id: 'cone-slider', value: 580, min: 400, max: 650,
