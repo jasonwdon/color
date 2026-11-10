@@ -101,26 +101,26 @@ wired-button:hover {
   font-size: 30px;
 }
 
-/* hand drawn rays all the way around a word, e.g. <span class="rays">light</span>.
-   The margin gives the word a little room from the lines above and below and from
-   its neighbors, and the rays sit in that room, behind the text, so they don't
-   cross other words. */
+/* short hand drawn rays in a flat oval all the way around a word,
+   e.g. <span class="rays">light</span>. The margin gives the word a little room
+   from the lines above and below and from its neighbors, and the rays sit in that
+   room, behind the text, so they don't cross other words. */
 .rays {
   position: relative;
   display: inline-block;
-  margin: 0.3em 0.2em;
+  margin: 0.2em 0.15em;
 }
 
 .rays::before {
   content: '';
   position: absolute;
-  left: -0.45em;
-  right: -0.45em;
-  top: -0.42em;
-  bottom: -0.42em;
+  left: -0.4em;
+  right: -0.4em;
+  top: -0.25em;
+  bottom: -0.25em;
   z-index: -1;
   pointer-events: none;
-  background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' preserveAspectRatio='none'%3E%3Cpath d='M170 113Q181 118 192 118M169 146Q180 154 191 160M143 159Q151 172 161 183M109 160Q113 174 114 189M92 160Q87 176 87 193M66 159Q54 171 49 187M31 144Q21 154 8 159M30 119Q20 125 8 125M30 89Q19 91 9 86M31 54Q21 45 9 40M61 41Q52 28 44 15M89 40Q85 25 84 9M116 40Q124 25 125 8M142 41Q149 28 159 18M169 51Q181 45 190 36M170 85Q181 82 193 80' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 235 175' preserveAspectRatio='none'%3E%3Cpath d='M205 111Q216 115 228 116M189 145Q197 154 207 158M162 153Q166 162 174 169M128 154Q132 163 132 173M105 154Q103 163 101 172M75 153Q72 161 65 168M43 144Q33 149 25 157M29 113Q18 118 6 118M29 73Q18 74 8 69M44 39Q35 35 28 28M80 30Q74 22 70 13M108 30Q107 21 105 12M127 30Q130 20 131 10M162 31Q167 22 174 14M192 40Q199 33 208 29M205 71Q216 69 226 65' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
 }
 
 /* "by Jason" on the title slide, a link back to the portfolio page */
