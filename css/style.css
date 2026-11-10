@@ -132,3 +132,16 @@ wired-button:hover {
 @media (prefers-reduced-motion: reduce) {
   .rays::before { animation: none; }
 }
+
+/* "by Jason" on the title slide, a link back to the portfolio page */
+.byline {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.byline:hover,
+.byline:focus-visible {
+  color: #f0a500;
+}

@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=3';
-import {clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=3';
+import {TextBox} from '../components.js?v=4';
+import {clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=4';
 
 export function RYBDesktop(rc) {
   let left = 50;
