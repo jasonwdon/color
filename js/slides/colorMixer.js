@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=6';
-import {onResize, mobileContentBottom} from '../utils.js?v=6';
+import {TextBox} from '../components.js?v=7';
+import {onResize, mobileContentBottom} from '../utils.js?v=7';
 
 // ── Color definitions ──────────────────────────────────────────────────────
 
@@ -123,8 +123,9 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
 
   // Title
   const titleEl = document.createElement('div');
+  titleEl.className = 'object'; // fades in with the rest of the slide
   titleEl.innerHTML = title;
-  titleEl.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};font-weight:bold;color:#222;text-align:center;`;
+  titleEl.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};font-weight:bold;color:#222;text-align:center;position:static;`;
   wrapper.appendChild(titleEl);
 
   // Display canvas
@@ -241,7 +242,8 @@ function makePanel(container, title, colors, mode, canvasW, canvasH, brushSize, 
   // Small swatch showing active color
   const displayColors = isSubtractive ? RYB_COLORS : colors;
   const swatch = document.createElement('div');
-  swatch.style.cssText = `width:16px;height:16px;border-radius:50%;border:2px solid #666;flex-shrink:0;background:rgb(${displayColors[0].r},${displayColors[0].g},${displayColors[0].b});`;
+  swatch.className = 'object'; // fades in with the rest of the slide
+  swatch.style.cssText = `position:static;width:16px;height:16px;border-radius:50%;border:2px solid #666;flex-shrink:0;background:rgb(${displayColors[0].r},${displayColors[0].g},${displayColors[0].b});`;
   btnRow.appendChild(swatch);
 
   colors.forEach((color, i) => {
