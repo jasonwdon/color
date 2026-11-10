@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js';
-import {wavelengthToColor, clearCanvas} from '../utils.js';
+import {TextBox, Slider} from '../components.js?v=2';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=2';
 
 const DELAY = 100;
 
@@ -12,13 +12,14 @@ const DESKTOP_L = {
   noteX: 535, noteY: 390, noteW: 410, noteSize: '14px',
 };
 
+// rect and grad are canvas coords; everything else is sandbox coords.
+// On mobile the y values are filled in by layoutMobile once the text is measured.
 const MOBILE_L = {
-  textX: 15,  textY: 20,  textW: 360, textSize: '22px',
-  w1LabelX: 170, w1LabelY: 318, w1LabelSize: '22px',
-  slider1X: 15, slider1Y: 420, slider1W: 360,
-  rectX: 130, rectY: 240, rectW: 130, rectH: 75,
-  gradX: 15,  gradY: 345, gradW: 360, gradH: 40,
-  noteY: 480, noteSize: '14px',
+  textX: 15,  textY: 20,  textSize: '22px',
+  w1LabelSize: '22px',
+  rectW: 130, rectH: 75,
+  gradH: 40,
+  noteSize: '14px',
 };
 
 export function ElectromagneticDesktop(rc, ctx, interval) {
@@ -26,27 +27,64 @@ export function ElectromagneticDesktop(rc, ctx, interval) {
 }
 
 export function ElectromagneticMobile(rc, ctx, interval) {
-  setupEM(rc, ctx, interval, MOBILE_L);
+  const W = window.innerWidth;
+  const L = {...MOBILE_L,
+    textW: W - 30,
+    rectX: Math.round((W - MOBILE_L.rectW) / 2), rectY: 0,
+    w1LabelX: Math.round((W - MOBILE_L.rectW) / 2), w1LabelW: MOBILE_L.rectW, w1LabelY: 0,
+    gradX: 15, gradW: W - 30, gradY: 0,
+    slider1X: 15, slider1W: W - 30, slider1Y: 0,
+    noteX: 15, noteW: W - 30, noteY: 0,
+  };
+  const els = setupEM(rc, ctx, interval, L);
+  layoutMobile(ctx, L, els);
+}
+
+// Stacks the color swatch, spectrum, slider and note below wherever the text
+// ends, since the text wraps differently from phone to phone.
+function layoutMobile(ctx, L, {text, label, slider, note}) {
+  let fontSize = parseInt(MOBILE_L.textSize);
+  onResize([text], () => {
+    const offY = ctx.canvas.offsetTop;
+    const top = text.offsetTop + text.offsetHeight + 20;
+    const bottom = mobileContentBottom();
+    // swatch, 30px gap, spectrum, slider thumb on its bottom edge, then the note
+    const blockH = L.rectH + 30 + L.gradH + 70;
+    if (bottom - top < blockH && fontSize > 16) {
+      fontSize -= 1;
+      text.style.fontSize = fontSize + 'px';
+      return;
+    }
+    const rectTop = Math.round(top + Math.max(0, (bottom - top - blockH) / 3));
+    L.rectY = rectTop - offY;
+    L.gradY = L.rectY + L.rectH + 30;
+    L.slider1Y = L.gradY + offY + 25;
+    L.noteY = L.slider1Y + 45;
+    label.style.top = (rectTop + L.rectH / 2 - label.offsetHeight / 2) + 'px';
+    slider.style.top = L.slider1Y + 'px';
+    note.style.top = L.noteY + 'px';
+  });
 }
 
 function setupEM(rc, ctx, interval, L) {
   interval.id = setInterval(drawElectromagnetic.bind(null, ctx, rc, L), DELAY);
 
-  TextBox({id: 'electromagnetic-text', text:
+  const text = TextBox({id: 'electromagnetic-text', text:
     "Later on, we learn that color is light reflecting off of objects at different intensities.<br><br>" +
     "Our eyes interpret this light and send signals to the brain.<br><br>" +
     "At different wavelengths, we see different colors.",
     x: L.textX, y: L.textY, w: L.textW, size: L.textSize, align: 'left'});
 
-  TextBox({id: 'wavelength1', text: "400nm", x: L.w1LabelX, y: L.w1LabelY, size: L.w1LabelSize});
+  const label = TextBox({id: 'wavelength1', text: "400nm", x: L.w1LabelX, y: L.w1LabelY, w: L.w1LabelW,
+    size: L.w1LabelSize, align: L.w1LabelW ? 'center' : undefined});
 
-  Slider({id: 'slider1', value: 400, min: 400, max: 650,
+  const slider = Slider({id: 'slider1', value: 400, min: 400, max: 650,
     w: L.slider1W, y: L.slider1Y, x: L.slider1X, onChange: () => {
       let wavelength = document.getElementById("slider1").value;
       document.getElementById('wavelength1').innerHTML = wavelength + 'nm';
     }});
 
-  TextBox({text: "*wavelengths above 650nm are indistinguishable on screens",
+  const note = TextBox({text: "*wavelengths above 650nm are indistinguishable on screens",
     x: L.noteX, y: L.noteY, w: L.noteW, size: L.noteSize, align: 'center'});
 
   let dragging = false;
@@ -79,6 +117,8 @@ function setupEM(rc, ctx, interval, L) {
 
   ctx.canvas.addEventListener('pointerup',     () => { dragging = false; });
   ctx.canvas.addEventListener('pointercancel', () => { dragging = false; });
+
+  return {text, label, slider, note};
 }
 
 function drawSpectrumGradient(ctx, rc, L) {

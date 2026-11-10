@@ -1,4 +1,5 @@
-import {TextBox} from '../components.js';
+import {TextBox} from '../components.js?v=2';
+import {onResize, mobileContentBottom} from '../utils.js?v=2';
 
 // ── Color definitions ──────────────────────────────────────────────────────
 
@@ -286,9 +287,9 @@ export function ColorMixerDesktop(rc, ctx, interval) {
   const sandbox = document.getElementById('sandbox');
 
   TextBox({
-    text: 'Both systems are consistent with your cone biology — the difference is the medium.<br><br>' +
+    text: 'Both systems are consistent with your cone biology. The difference is the medium.<br><br>' +
           '<b>Screens</b> start with black and emit light. Adding R, G, B together makes white.<br><br>' +
-          '<b>Paint</b> starts with white and absorbs wavelengths. Each pigment blocks certain frequencies — so mixing darkens, and the primaries are different.',
+          '<b>Paint</b> starts with white and absorbs wavelengths. Each pigment blocks certain frequencies: mixing darkens, and the primaries are different.',
     x: 50, y: 50, w: 390, size: '21px', align: 'left', lineHeight: '1.35',
   });
 
@@ -306,19 +307,28 @@ export function ColorMixerMobile(rc, ctx, interval) {
   const sandbox = document.getElementById('sandbox');
   const W = window.innerWidth;
 
-  TextBox({
+  const text = TextBox({
     text: 'Same cones, different medium.<br>' +
-          '<b>Screens</b> emit light on black — R+G+B → white.<br>' +
-          '<b>Paint</b> absorbs wavelengths from white — mixing blocks frequencies.',
+          '<b>Screens</b> emit light on black: R+G+B → white.<br>' +
+          '<b>Paint</b> absorbs wavelengths from white. Mixing blocks frequencies.',
     x: 10, y: 55, w: W - 20, size: '20px', align: 'left', lineHeight: '1.3',
   });
 
   const panelW = Math.min(Math.floor((W - 30) / 2), 160);
 
   const row = document.createElement('div');
-  row.style.cssText = `position:absolute;left:0;right:0;top:160px;display:flex;gap:10px;justify-content:center;align-items:flex-start;`;
+  row.style.cssText = `position:absolute;left:0;right:0;display:flex;gap:10px;justify-content:center;align-items:flex-start;transform-origin:top center;`;
   sandbox.appendChild(row);
 
   makePanel(row, 'Light<br>(additive)',    RGB_COLORS, 'additive',    panelW, 170, 25, '18px');
   makePanel(row, 'Paint<br>(subtractive)', RYB_COLORS, 'subtractive', panelW, 170, 25, '18px');
+
+  // The text wraps differently from phone to phone, so the panels start below
+  // wherever it actually ends, and shrink if the screen is too short for them.
+  onResize([text, row], () => {
+    const top = text.offsetTop + text.offsetHeight + 12;
+    const scale = Math.max(0.5, Math.min(1, (mobileContentBottom() - top) / row.offsetHeight));
+    row.style.top = top + 'px';
+    row.style.transform = scale < 1 ? `scale(${scale})` : '';
+  });
 }

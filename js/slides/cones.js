@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js';
-import {wavelengthToColor, clearCanvas} from '../utils.js';
+import {TextBox, Slider} from '../components.js?v=2';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=2';
 
 const DELAY = 50;
 const GRAPH_MIN = 400, GRAPH_MAX = 650;
@@ -14,64 +14,97 @@ function sensitivity(wl, peak, sigma) {
   return Math.exp(-((wl - peak) ** 2) / (2 * sigma * sigma));
 }
 
-// all x/y values are sandbox coords; canvas coords = sandbox - 50
+const TEXT =
+  "We also learn that our eyes have three types of cone cells.<br><br>" +
+  "Each responds to a different range of wavelengths, and together they create our perception of color.<br><br>";
+
+// all x/y values are sandbox coords; the draw code converts them to canvas coords
 const DESKTOP_L = {
   textX: 50,  textY: 140, textW: 400, textSize: '24px',
   graphX: 490, graphY: 70, graphW: 400, graphH: 90,  graphGap: 115,
   sliderX: 490, sliderY: 455, sliderW: 400,
   rainbowH: 18,
   labelSize: 20,
-  waitText: "But wait — red, green, blue?<br>Isn't that supposed to be red, <b>yellow</b>, blue?",
+  waitText: "But wait: red, green, blue?<br>Isn't that supposed to be red, <b>yellow</b>, blue?",
 };
 
 const MOBILE_L = {
-  textX: 15,  textY: 20,  textW: 360, textSize: '22px',
-  graphX: 60,  graphY: 210, graphW: 310, graphH: 75, graphGap: 100,
-  sliderX: 15, sliderY: 545, sliderW: 360,
+  textX: 15,  textY: 20, textSize: 22,
+  graphH: 75, graphGap: 100,
   rainbowH: 14,
   labelSize: 18,
   waitText: "But wait... isn't it red, yellow, blue?",
 };
 
 export function ConesDesktop(rc, ctx, interval) {
-  setupCones(rc, ctx, interval, DESKTOP_L);
+  const L = {...DESKTOP_L};
+  setupCones(rc, ctx, interval, L);
 }
 
+// On phones the text wraps differently from screen to screen, so the graphs,
+// spectrum and slider are stacked below wherever the text actually ends.
 export function ConesMobile(rc, ctx, interval) {
-  const { graphW } = MOBILE_L;
-  const graphX  = Math.round((window.innerWidth - graphW) / 2) + 50;
-  const sliderX = Math.round((window.innerWidth - graphW) / 2);
-  setupCones(rc, ctx, interval, {...MOBILE_L, graphX, sliderX, sliderW: graphW});
+  const W = window.innerWidth;
+  const graphW = Math.min(340, W - 50);
+  const L = {...MOBILE_L,
+    textW: W - 2 * MOBILE_L.textX,
+    graphX: Math.round((W - graphW) / 2), graphW,
+    sliderX: Math.round((W - graphW) / 2), sliderW: graphW,
+    graphY: 0, sliderY: 0,
+  };
+  const {text, slider} = setupCones(rc, ctx, interval, {...L, textSize: L.textSize + 'px'}, L);
+
+  let fontSize = MOBILE_L.textSize;
+  onResize([text, slider], () => {
+    const sliderH = slider.offsetHeight || 30;
+    const top = text.offsetTop + text.offsetHeight + 12;
+    const bottom = mobileContentBottom();
+    // block = three graphs, then the spectrum bar 8px above the slider
+    const fixed = L.rainbowH + 8 + sliderH;
+    const gap = Math.min(MOBILE_L.graphGap, Math.floor((bottom - top - fixed) / 3));
+    if (gap < 55 && fontSize > 16) {
+      // not enough room on a short screen: shrink the text and lay out again
+      fontSize -= 1;
+      text.style.fontSize = fontSize + 'px';
+      return;
+    }
+    L.graphGap = gap;
+    L.graphH = Math.max(20, Math.min(MOBILE_L.graphH, gap - 22));
+    const blockH = 2 * gap + L.graphH + 22 + fixed;
+    L.graphY = Math.round(top + Math.max(0, (bottom - top - blockH) / 2));
+    L.sliderY = L.graphY + blockH - sliderH;
+    slider.style.top = L.sliderY + 'px';
+  });
 }
 
-function setupCones(rc, ctx, interval, L) {
+function setupCones(rc, ctx, interval, config, L = config) {
+  const text = TextBox({text: TEXT + config.waitText,
+    x: config.textX, y: config.textY, w: config.textW, size: config.textSize, align: 'left'});
+
+  const slider = Slider({id: 'cone-slider', value: 580, min: 400, max: 650,
+    x: config.sliderX, y: config.sliderY, w: config.sliderW, onChange: () => {}});
+
   interval.id = setInterval(drawCones.bind(null, ctx, rc, L), DELAY);
-
-  TextBox({text:
-    "We also learn that our eyes have three types of cone cells.<br><br>" +
-    "Each responds to a different range of wavelengths, and together they create our perception of color.<br><br>" +
-    L.waitText,
-    x: L.textX, y: L.textY, w: L.textW, size: L.textSize, align: 'left'});
-
-  Slider({id: 'cone-slider', value: 580, min: 400, max: 650,
-    x: L.sliderX, y: L.sliderY, w: L.sliderW, onChange: () => {}});
+  return {text, slider};
 }
 
 function drawCones(ctx, rc, L) {
   clearCanvas(ctx);
   const wl = parseFloat(document.getElementById('cone-slider').value);
-  drawRainbow(ctx, L, wl);
+  // sandbox coords to canvas coords
+  const offX = ctx.canvas.offsetLeft, offY = ctx.canvas.offsetTop;
+  drawRainbow(ctx, L, wl, offX, offY);
   CONES.forEach((cone, i) => {
     drawConeGraph(ctx, cone,
-      L.graphX - 50, L.graphY - 50 + i * L.graphGap,
+      L.graphX - offX, L.graphY - offY + i * L.graphGap,
       L.graphW, L.graphH, wl, L.labelSize);
   });
 }
 
-function drawRainbow(ctx, L, selectedWl) {
+function drawRainbow(ctx, L, selectedWl, offX, offY) {
   const barH = L.rainbowH;
-  const x = L.graphX - 50;                         // canvas coords
-  const y = L.sliderY - 50 - barH - 8;             // 8px gap above slider
+  const x = L.graphX - offX;                       // canvas coords
+  const y = L.sliderY - offY - barH - 8;           // 8px gap above slider
   const w = L.graphW;
 
   // Draw pixel-by-pixel rainbow across the visible spectrum range
@@ -152,6 +185,11 @@ function drawConeGraph(ctx, cone, x, y, w, h, selectedWl, labelSize) {
   ctx.fillStyle = `rgb(${r},${g},${b})`;
   ctx.font = `${labelSize}px Gaegu`;
   ctx.textAlign = 'right';
+  // white outline keeps the label readable where the curve's fill runs under it
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 4;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(cone.name, x + w - 4, y + labelSize + 4);
   ctx.fillText(cone.name, x + w - 4, y + labelSize + 4);
   ctx.textAlign = 'left';
 }

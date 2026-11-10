@@ -1,7 +1,7 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button} from './components.js';
-import {clearSandbox, setDimensions} from './utils.js';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ColorMixerDesktop, ColorMixerMobile} from './slides/AllSlides.js';
+import {Button} from './components.js?v=2';
+import {clearSandbox, setDimensions} from './utils.js?v=2';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ColorMixerDesktop, ColorMixerMobile} from './slides/AllSlides.js?v=2';
 
 let interval = {id: null};
 let slideIndex = 0;
@@ -53,7 +53,9 @@ function showSlide(i) {
   slideFn(rc, ctx, interval);
 
   if (slideIndex === 0) {
-    Button({text: "Begin", size: '30px', y: Math.round(height * 0.7), onClick: nextSlide})
+    // on short phones 70% down lands on "by Jason", so keep Begin below it
+    const beginY = isMobile ? Math.max(Math.round(height * 0.7), 410) : Math.round(height * 0.7);
+    Button({text: "Begin", size: '30px', y: beginY, onClick: nextSlide})
   } else {
     Button({text: "BACK", class: 'back-button', onClick: prevSlide})
     Button({text: "NEXT", class: 'next-button', onClick: nextSlide})

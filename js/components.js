@@ -21,6 +21,7 @@ export function TextBox(config) {
   if (config.lineHeight !== undefined) element.style.lineHeight = config.lineHeight;
 
   document.getElementById("sandbox").appendChild(element);
+  return element;
 }
 
 export function Slider(config) {
@@ -41,6 +42,7 @@ export function Slider(config) {
   if (config.h !== undefined) element.style.height = config.h + "px";
 
   document.getElementById("sandbox").appendChild(element);
+  return element;
 }
 
 export function Button(config) {

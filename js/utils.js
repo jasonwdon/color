@@ -47,6 +47,24 @@ export function wavelengthToColor(wavelength) {
   return "rgba(" + (R * 100) + "%," + (G * 100) + "%," + (B * 100) + "%, " + alpha + ")";
 }
 
+// Runs fn now and again whenever one of els changes size, e.g. when the web
+// font loads and a text box rewraps, so anything placed below the text
+// follows it down instead of being drawn over it.
+export function onResize(els, fn) {
+  fn();
+  const observer = new ResizeObserver(() => {
+    if (els.every(el => el.isConnected)) fn();
+    else observer.disconnect();
+  });
+  els.forEach(el => observer.observe(el));
+}
+
+// Lowest sandbox y that mobile slide content may reach without running into
+// the BACK and NEXT buttons pinned to the bottom of the screen.
+export function mobileContentBottom() {
+  return document.getElementById('sandbox').clientHeight - 95;
+}
+
 // Because JQuery is for the weak
 export function clearSandbox(interval) {
   clearInterval(interval.id);

@@ -93,6 +93,10 @@ export function MySlideMobile(rc, ctx, interval) {
 }
 ```
 
+**Never place mobile content at a fixed y below text.** Text wraps differently from phone to phone (and again once the Gaegu font loads), so a chart at a hardcoded y ends up on top of it. Measure instead: `TextBox` and `Slider` return their element, and `onResize([els], fn)` in `utils.js` runs `fn` now and whenever those elements change size. In `fn`, start content at `text.offsetTop + text.offsetHeight + gap`, keep it above `mobileContentBottom()` (the top of the BACK/NEXT buttons), and shrink the text or the content if a short screen can't fit both. The cones, color mixer, RYB and light slides all do this.
+
+**Cache busting:** module imports carry `?v=N` (and `index.html` loads `js/color.js?v=N`). Bump N everywhere together when you change JS, so phones don't mix cached old modules with new ones.
+
 **Coordinate scaling for pointer events:**
 ```js
 const rect = canvas.getBoundingClientRect();
