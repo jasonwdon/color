@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=21';
-import {onResize, mobileContentBottom} from '../utils.js?v=21';
+import {TextBox} from '../components.js?v=22';
+import {onResize, mobileContentBottom} from '../utils.js?v=22';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -427,6 +427,9 @@ export function PaintMixingMobile() {
 function setupNote(el) {
   const star = el.querySelector('.note-star');
   const note = el.querySelector('.note-popup');
+  // the text box fades in, which makes it its own layer, so lift the whole
+  // box above BACK/NEXT for the popup to show over them
+  el.style.zIndex = '5';
   const setOpen = (open) => {
     note.hidden = !open;
     star.setAttribute('aria-expanded', String(open));
