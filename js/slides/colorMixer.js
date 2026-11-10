@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=10';
-import {onResize, mobileContentBottom} from '../utils.js?v=10';
+import {TextBox} from '../components.js?v=11';
+import {onResize, mobileContentBottom} from '../utils.js?v=11';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -301,7 +301,7 @@ const WHITE = "<b style='color:white; background-color:black; padding: 0 4px; bo
 // same text on phones and desktop
 const LIGHT_TEXT =
   "Ah, our first conundrum. Let's clear it up.<br><br>" +
-  `The <b>true primary colors of human vision are ${RED}, ${GREEN} and ${BLUE}</b>. ` +
+  `<b>The true primary colors of human vision are ${RED}, ${GREEN} and ${BLUE}</b>. ` +
   "They're the three axes our brain uses to read color.<br><br>" +
   `With no light at all, we see ${BLACK}. Mix in these wavelengths and the magic begins.`;
 
