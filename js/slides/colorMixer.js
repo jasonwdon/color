@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=14';
-import {onResize, mobileContentBottom} from '../utils.js?v=14';
+import {TextBox} from '../components.js?v=15';
+import {onResize, mobileContentBottom} from '../utils.js?v=15';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -339,8 +339,6 @@ const LIGHT_TEXT =
 const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
   "and each layer of paint blocks some of those wavelengths from reaching your eyes.<br><br>" +
-  "Here, our primary colors flip. A white canvas gets all three cones firing, and we turn them off " +
-  "one at a time by blocking their colors. " +
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
   `and together they read as ${MAGENTA}.`;
 
