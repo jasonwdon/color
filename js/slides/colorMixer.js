@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=13';
-import {onResize, mobileContentBottom} from '../utils.js?v=13';
+import {TextBox} from '../components.js?v=14';
+import {onResize, mobileContentBottom} from '../utils.js?v=14';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -325,7 +325,7 @@ function makeOppositesDiagram(container) {
 // color words styled like the RYB and cones slides
 const word = (color, text = color) => `<b style='color:${color}'>${text}</b>`;
 const RED = word('red'), GREEN = word('green'), BLUE = word('blue'), YELLOW = word('yellow');
-const CYAN = word('cyan'), MAGENTA = word('magenta');
+const MAGENTA = word('magenta');
 const BLACK = '<b>black</b>';
 const WHITE = "<b style='color:white; background-color:black; padding: 0 4px; border-radius: 3px;'>white</b>";
 
@@ -339,8 +339,13 @@ const LIGHT_TEXT =
 const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
   "and each layer of paint blocks some of those wavelengths from reaching your eyes.<br><br>" +
-  `So for paint, the primaries are the opposites of ${RED}, ${GREEN} and ${BLUE}: ${CYAN}, ${MAGENTA} and ${YELLOW}. ` +
-  `We learned ${RED}, ${YELLOW} and ${BLUE} in school because they were simpler.`;
+  "Here, our primary colors flip. A white canvas gets all three cones firing, and we turn them off " +
+  "one at a time by blocking their colors. " +
+  `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
+  `and together they read as ${MAGENTA}.`;
+
+// sits under the opposites diagram, between it and the mixer
+const PAINT_CLOSING = `In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.`;
 
 const LIGHT_TITLE = 'Light mixing (additive)';
 const PAINT_TITLE = 'Paint mixing (subtractive)';
@@ -367,12 +372,12 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  TextBox({text: PAINT_TEXT, x: 50, y: 90, w: 390, size: '23px', align: 'left', lineHeight: '1.35'});
+  TextBox({text: PAINT_TEXT, x: 50, y: 65, w: 400, size: '21px', align: 'left', lineHeight: '1.35'});
 
   const row = rightColumn();
   row.style.gap = '20px';
   row.style.alignItems = 'center';
-  makeOppositesDiagram(row);
+  diagramWithClosing(row, '19px');
   makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
     canvasW: 250, canvasH: 280, brushSize: 42, fontSize: '20px', clearInline: false});
 }
@@ -382,13 +387,27 @@ export function PaintMixingMobile() {
   const panelW = Math.min(190, W - DIAGRAM_W - 25);
   layoutMobile(PAINT_TEXT, 19, (row) => {
     row.style.alignItems = 'center';
-    makeOppositesDiagram(row);
+    diagramWithClosing(row, '16px');
     makePanel(row, {title: 'Paint mixing<br>(subtractive)', colors: CMY_COLORS, mode: 'subtractive',
       canvasW: panelW, canvasH: 190, brushSize: 28, fontSize: '18px', clearInline: false});
   });
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
+
+// the opposites diagram with the closing line under it, as one column
+function diagramWithClosing(row, fontSize) {
+  const col = document.createElement('div');
+  col.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:6px;width:${DIAGRAM_W}px;flex-shrink:0;`;
+  makeOppositesDiagram(col);
+  const closing = document.createElement('div');
+  closing.className = 'object textbox'; // fades in with the rest of the slide
+  closing.innerHTML = PAINT_CLOSING;
+  closing.style.cssText = `position:static;font-size:${fontSize};line-height:1.25;text-align:center;`;
+  col.appendChild(closing);
+  row.appendChild(col);
+  return col;
+}
 
 // desktop: the mixer (and diagram) centered in the space right of the text,
 // above the BACK/NEXT buttons
