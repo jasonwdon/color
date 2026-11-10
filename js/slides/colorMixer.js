@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=33';
-import {onResize, mobileContentBottom} from '../utils.js?v=33';
+import {TextBox} from '../components.js?v=34';
+import {onResize, mobileContentBottom} from '../utils.js?v=34';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -489,7 +489,7 @@ function rightColumn() {
 // actually ends. On short screens the text shrinks a little first, then the
 // row shrinks to fit above the buttons.
 // the gap under the paint slide's caption on phones
-const SPACER_MIN = 12, SPACER_MAX = 40;
+const SPACER_MIN = 6, SPACER_MAX = 20;
 
 function layoutMobile(textHtml, startSize, fill, spacer = null) {
   const sandbox = document.getElementById('sandbox');
