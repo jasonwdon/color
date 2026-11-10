@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js?v=5';
-import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=5';
+import {TextBox, Slider} from '../components.js?v=6';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=6';
 
 const DELAY = 50;
 const GRAPH_MIN = 400, GRAPH_MAX = 650;
@@ -16,7 +16,7 @@ function sensitivity(wl, peak, sigma) {
 
 // color words styled like the RYB and title slides
 const RED    = "<b style='color:red'>red</b>";
-const GREEN  = "<b style='color:#22a63a'>green</b>";
+const GREEN  = "<b style='color:green'>green</b>";
 const BLUE   = "<b style='color:blue'>blue</b>";
 const YELLOW = "<b style='color:yellow'>yellow</b>";
 
