@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=32';
-import {onResize, mobileContentBottom} from '../utils.js?v=32';
+import {TextBox} from '../components.js?v=33';
+import {onResize, mobileContentBottom} from '../utils.js?v=33';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -411,6 +411,8 @@ export function PaintMixingDesktop() {
   group.style.cssText = 'position:absolute;left:50px;width:400px;display:flex;flex-direction:column;align-items:center;';
   document.getElementById('sandbox').appendChild(group);
   makeCaptionedDiagram(group);
+  // a little more air between the diagram and its caption than on phones
+  group.querySelector('.diagram-caption').style.marginTop = '6px';
   onResize([text], () => {
     group.style.top = (text.offsetTop + text.offsetHeight + 2) + 'px';
   });
