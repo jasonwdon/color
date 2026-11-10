@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js?v=7';
-import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=7';
+import {TextBox, Slider} from '../components.js?v=8';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=8';
 
 const DELAY = 50;
 const GRAPH_MIN = 400, GRAPH_MAX = 650;
@@ -22,7 +22,7 @@ const YELLOW = "<b style='color:yellow'>yellow</b>";
 
 // same text on phones and desktop
 const TEXT =
-  "The eyes turn <span class='rays'>light</span> into brain signals using 3 types of cone cells.<br><br>" +
+  "The eyes turn light into brain signals using 3 types of cone cells.<br><br>" +
   "Each responds to a different range of wavelengths, and together they create our perception of color.<br><br>" +
   `But wait: ${RED}, ${GREEN}, ${BLUE}?<br>Isn't that supposed to be ${RED}, ${YELLOW}, ${BLUE}?`;
 
