@@ -180,27 +180,34 @@ wired-button:hover {
 }
 
 .note-star {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  margin-left: 2px;
+  /* a plain raised *, nudged up with relative positioning (not
+     vertical-align) so the line it sits on keeps its normal height */
+  position: relative;
+  top: -0.3em;
+  margin: 0 0 0 1px;
   padding: 0;
-  vertical-align: 0.35em;
-  border: 1.5px solid #444;
-  border-radius: 50%;
-  background: #fff;
+  border: none;
+  background: none;
   color: #c00;
-  font-family: Gaegu, cursive;
-  font-size: 20px;
+  font: inherit;
   font-weight: bold;
-  line-height: 26px;
+  line-height: 0;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 0.1s;
+}
+
+/* a bigger invisible tap target that doesn't take any room */
+.note-star::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  top: -14px;
+  bottom: -14px;
 }
 
 .note-star:hover {
-  transform: scale(1.1);
+  color: #f33;
 }
 
 .note-popup {

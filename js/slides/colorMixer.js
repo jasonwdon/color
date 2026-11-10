@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=22';
-import {onResize, mobileContentBottom} from '../utils.js?v=22';
+import {TextBox} from '../components.js?v=23';
+import {onResize, mobileContentBottom} from '../utils.js?v=23';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -360,10 +360,10 @@ const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
   "and each layer of paint blocks some of those wavelengths from reaching your eyes. " +
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
-  `and together they read as <span class='note-anchor'>${MAGENTA}<button type='button' class='note-star' ` +
+  `and together they read as <span class='note-anchor'>${MAGENTA}.<button type='button' class='note-star' ` +
   `aria-label='Why red, yellow and blue?' aria-expanded='false'>*</button>` +
   `<span class='note-popup' hidden>In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.</span>` +
-  `</span>.`;
+  `</span>`;
 
 const LIGHT_TITLE = 'Light mixing (additive)';
 const PAINT_TITLE = 'Paint mixing (subtractive)';
