@@ -30,26 +30,24 @@ canvas {
 }
 
 @media (max-width: 480px) {
-  /* The deck fits the screen, so the page never scrolls. Scrolling made the
-     browser bars slide in and out, which resized and redrew the slide. */
-  html, body {
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
+  /* The slide is exactly the screen's height (100svh, the height with the
+     browser bars showing), so there's nothing to scroll and the bars stay
+     put. The page is otherwise left alone, so pulling down still refreshes. */
   body {
-    position: fixed;
-    inset: 0;
     margin: 0;
     padding-top: 0;
   }
   #sandbox {
     flex: 0 0 100vw;
     height: 100svh;
+    /* nothing poking past the edge can make the page scrollable */
+    overflow: clip;
   }
-  /* drags on the canvas (spectrum handle, painting) never pan or zoom the page */
-  canvas {
-    touch-action: none;
+  /* side to side drags (the spectrum, sliders) go to the slide, while up and
+     down is left to the browser for pull to refresh. The mixers' drawing
+     canvases set touch-action: none themselves, so drawing never pans. */
+  canvas, wired-slider {
+    touch-action: pan-y;
   }
   .next-button {
     left: auto !important;
@@ -173,8 +171,8 @@ wired-button:hover {
   line-height: 1;
 }
 
-/* the "why not red, yellow, blue?" link on the paint slide, and the note
-   it opens. The note floats over what's below, so opening it moves nothing. */
+/* the "Not red, yellow, blue?" caption under the arrows diagram on the
+   paint slide, and the note it opens. The note floats over what's below, so opening it moves nothing. */
 .note-anchor {
   position: relative;
 }
@@ -196,6 +194,19 @@ wired-button:hover {
   white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+/* the caption sits centered under the arrows diagram */
+.diagram-caption {
+  display: block;
+  text-align: center;
+  margin-top: -4px;
+  line-height: 1;
+}
+
+.diagram-caption .note-link {
+  margin: 0;
+  font-size: 15px;
 }
 
 .note-link:hover,

@@ -333,6 +333,18 @@ function makeOppositesDiagram(container) {
   return canvas;
 }
 
+// The diagram with its caption centered underneath. The caption opens a
+// note, so the pair is wired up with setupNote.
+function makeCaptionedDiagram(container) {
+  makeOppositesDiagram(container);
+  const caption = document.createElement('div');
+  caption.className = 'object note-anchor diagram-caption';
+  caption.style.cssText = `position:relative;width:${DIAGRAM_W}px;`;
+  caption.innerHTML = CAPTION;
+  container.appendChild(caption);
+  setupNote(caption);
+}
+
 // ── Text ───────────────────────────────────────────────────────────────────
 
 // color words styled like the RYB and cones slides
@@ -353,10 +365,12 @@ const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
   "and each layer of paint blocks some of those wavelengths from reaching your eyes. " +
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
-  `and together they read as ${MAGENTA}.<span class='note-anchor'><button type='button' class='note-link' ` +
-  `aria-expanded='false'>why not red, yellow, blue?</button>` +
-  `<span class='note-popup' hidden>In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.</span>` +
-  `</span>`;
+  `and together they read as ${MAGENTA}.`;
+
+// caption under the arrows diagram, which opens a note about school
+const CAPTION =
+  `<button type='button' class='note-link' aria-expanded='false'>Not red, yellow, blue?</button>` +
+  `<span class='note-popup' hidden>In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.</span>`;
 
 
 // ── Light slide ────────────────────────────────────────────────────────────
@@ -381,8 +395,7 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  const text = TextBox({text: PAINT_TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
-  setupNote(text);
+  TextBox({text: PAINT_TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
 
   // the arrows diagram sits right above the mixer, both from the top and
   // pulled in next to the paragraph
@@ -392,24 +405,23 @@ export function PaintMixingDesktop() {
   row.style.alignItems = 'flex-start';
   row.style.top = '60px';
   row.style.gap = '8px';
-  makeOppositesDiagram(row);
+  makeCaptionedDiagram(row);
   makePanel(row, {colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 440, canvasH: 270, brushSize: 42, fontSize: '20px', clearInline: true});
+    canvasW: 440, canvasH: 254, brushSize: 42, fontSize: '20px', clearInline: true});
 }
 
 export function PaintMixingMobile() {
   const W = window.innerWidth;
   const canvasW = Math.min(300, W - 40);
-  const text = layoutMobile(PAINT_TEXT, 19, (row) => {
+  layoutMobile(PAINT_TEXT, 19, (row) => {
     // one column: the arrows diagram right above the mixer
     const col = document.createElement('div');
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
     row.appendChild(col);
-    makeOppositesDiagram(col);
+    makeCaptionedDiagram(col);
     makePanel(col, {colors: CMY_COLORS, mode: 'subtractive',
       canvasW, canvasH: 220, brushSize: 28, fontSize: '18px', clearInline: true});
   });
-  setupNote(text);
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
