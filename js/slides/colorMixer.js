@@ -373,7 +373,7 @@ const CAPTION =
   `<span class='note-popup' hidden>The RYB model dates back to 18th-century art theory, before light absorption ` +
   "and human vision were fully understood. Because early painters relied on naturally occurring minerals and dyes, " +
   "RYB became the standard teaching model for generations. Modern color science eventually replaced it with CMY and RGB, " +
-  "but the traditional model simply stuck around in early education.</span>`;
+  "but the traditional model simply stuck around in early education.</span>";
 
 
 // ── Light slide ────────────────────────────────────────────────────────────
