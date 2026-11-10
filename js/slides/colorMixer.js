@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=26';
-import {onResize, mobileContentBottom} from '../utils.js?v=26';
+import {TextBox} from '../components.js?v=27';
+import {onResize, mobileContentBottom} from '../utils.js?v=27';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
