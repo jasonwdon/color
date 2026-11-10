@@ -150,29 +150,20 @@ wired-button:hover {
   color: #f0a500;
 }
 
-/* "draw here!" on the color mixers: a pencil drawing a squiggle near the
-   bottom of the canvas, removed once someone starts painting */
+/* "draw here!" with a pencil above it on the color mixers, near the bottom
+   of the canvas, removed once someone starts painting */
 .draw-hint {
   left: 50%;
-  bottom: 6px;
+  bottom: 8px;
   width: 100px;
   margin-left: -50px;
   pointer-events: none;
   text-align: center;
 }
 
-.draw-hint-line {
-  stroke-dasharray: 100 100;
-  animation: hint-line 2.4s ease-in-out infinite;
-}
-
-.draw-hint-pencil {
-  position: absolute;
-  left: 0;
-  top: 0;
-  offset-anchor: 3px 23px; /* the pencil's tip */
-  offset-rotate: 0deg;
-  animation: hint-pencil 2.4s ease-in-out infinite;
+.draw-hint svg {
+  display: block;
+  margin: 0 auto 2px;
 }
 
 .draw-hint-text {
@@ -180,20 +171,6 @@ wired-button:hover {
   font-size: 18px;
   font-weight: bold;
   line-height: 1;
-}
-
-@keyframes hint-line {
-  0%   { stroke-dashoffset: 100; }
-  50%  { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -100; }
-}
-
-@keyframes hint-pencil {
-  0%   { offset-distance: 0%;   opacity: 0; }
-  8%   { opacity: 1; }
-  50%  { offset-distance: 100%; opacity: 1; }
-  70%  { offset-distance: 100%; opacity: 0; }
-  100% { offset-distance: 100%; opacity: 0; }
 }
 
 @keyframes fadeout {

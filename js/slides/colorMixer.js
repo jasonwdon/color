@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=12';
-import {onResize, mobileContentBottom} from '../utils.js?v=12';
+import {TextBox} from '../components.js?v=13';
+import {onResize, mobileContentBottom} from '../utils.js?v=13';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -122,7 +122,7 @@ function makePanel(container, {title, colors, mode, canvasW, canvasH, brushSize,
   canvasBox.appendChild(canvas);
   wrapper.appendChild(canvasBox);
 
-  // A pencil drawing a squiggle tells people they can paint here. It goes
+  // A pencil and "draw here!" tell people they can paint here. They go
   // away as soon as they start.
   let hint = makeDrawHint(canvasBox, isSubtractive ? '#444' : '#eee');
 
@@ -243,19 +243,13 @@ function makePanel(container, {title, colors, mode, canvasW, canvasH, brushSize,
 
 // ── Draw hint ──────────────────────────────────────────────────────────────
 
-// The pencil rides along the squiggle (CSS offset-path) while the squiggle
-// draws itself in; the animations are in style.css under .draw-hint.
-const SQUIGGLE = 'M10 24 C 20 6, 30 6, 38 21 S 56 36, 64 20 S 82 6, 90 21';
-
+// A still pencil over "draw here!", near the bottom of the canvas.
 function makeDrawHint(container, color) {
   const hint = document.createElement('div');
   hint.className = 'object draw-hint'; // fades in with the rest of the slide
   hint.style.color = color;
   hint.innerHTML =
-    `<svg width="100" height="36" viewBox="0 0 100 36" fill="none">` +
-      `<path class="draw-hint-line" d="${SQUIGGLE}" pathLength="100" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>` +
-    `</svg>` +
-    `<svg class="draw-hint-pencil" style="offset-path:path('${SQUIGGLE}')" width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">` +
+    `<svg width="30" height="30" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">` +
       `<path d="M3 23 L6 15 L11 20 Z M6 15 L19 2 L24 7 L11 20 M16.5 4.5 L21.5 9.5"/>` +
     `</svg>` +
     `<div class="draw-hint-text">draw here!</div>`;
