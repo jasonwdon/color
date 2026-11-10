@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=4';
-import {onResize, mobileContentBottom} from '../utils.js?v=4';
+import {TextBox} from '../components.js?v=5';
+import {onResize, mobileContentBottom} from '../utils.js?v=5';
 
 // ── Color definitions ──────────────────────────────────────────────────────
 
