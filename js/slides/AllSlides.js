@@ -1,6 +1,6 @@
 
-export * from './title.js?v=15'
-export * from './ryb.js?v=15'
-export * from './electromagnetic.js?v=15'
-export * from './cones.js?v=15'
-export * from './colorMixer.js?v=15'
+export * from './title.js?v=16'
+export * from './ryb.js?v=16'
+export * from './electromagnetic.js?v=16'
+export * from './cones.js?v=16'
+export * from './colorMixer.js?v=16'

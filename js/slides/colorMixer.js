@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=15';
-import {onResize, mobileContentBottom} from '../utils.js?v=15';
+import {TextBox} from '../components.js?v=16';
+import {onResize, mobileContentBottom} from '../utils.js?v=16';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -259,15 +259,15 @@ function makeDrawHint(container, color) {
 
 // ── Opposites diagram ──────────────────────────────────────────────────────
 
-// Red, green and blue light on the left, each paired by a two-headed arrow
-// with its opposite paint primary on the right. Drawn on its own small canvas
-// so it can sit in a flex row beside the mixer.
+// Red, green and blue light across the top, each paired by a two-headed
+// arrow with its opposite paint primary underneath. Drawn on its own small
+// canvas so it can sit above the mixer.
 const PAIRS = [
   { light: 'red',   lightFill: 'rgb(255,0,0)', paint: 'cyan',    paintFill: 'rgb(0,255,255)' },
   { light: 'green', lightFill: 'rgb(0,128,0)', paint: 'magenta', paintFill: 'rgb(255,0,255)' },
   { light: 'blue',  lightFill: 'rgb(0,0,255)', paint: 'yellow',  paintFill: 'rgb(255,255,0)' },
 ];
-const DIAGRAM_W = 180, DIAGRAM_H = 250;
+const DIAGRAM_W = 280, DIAGRAM_H = 148;
 
 function makeOppositesDiagram(container) {
   const dpr = window.devicePixelRatio || 1;
@@ -282,35 +282,37 @@ function makeOppositesDiagram(container) {
   ctx.scale(dpr, dpr);
   const rc = rough.canvas(canvas);
 
-  const leftX = 40, rightX = 140, d = 40;
-  const rowY = (i) => 58 + i * 72;
+  const colX = (i) => 100 + i * 74;
+  const topY = 38, bottomY = 110, d = 32;
 
   function draw() {
     ctx.clearRect(0, 0, DIAGRAM_W, DIAGRAM_H);
     ctx.fillStyle = '#222';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 20px Gaegu, cursive';
+    ctx.fillText('light', 4, topY);
+    ctx.fillText('paint', 4, bottomY);
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    ctx.font = 'bold 20px Gaegu, cursive';
-    ctx.fillText('light', leftX, 20);
-    ctx.fillText('paint', rightX, 20);
-
     ctx.font = '17px Gaegu, cursive';
     PAIRS.forEach((p, i) => {
-      const y = rowY(i);
+      const x = colX(i);
       const opts = {fillStyle: 'solid', strokeWidth: 2, seed: i + 1};
-      rc.circle(leftX,  y, d, {...opts, fill: p.lightFill});
-      rc.circle(rightX, y, d, {...opts, fill: p.paintFill});
-      ctx.fillText(p.light, leftX,  y + d / 2 + 17);
-      ctx.fillText(p.paint, rightX, y + d / 2 + 17);
+      rc.circle(x, topY,    d, {...opts, fill: p.lightFill});
+      rc.circle(x, bottomY, d, {...opts, fill: p.paintFill});
+      ctx.fillText(p.light, x, topY - d / 2 - 6);
+      ctx.fillText(p.paint, x, bottomY + d / 2 + 16);
 
       // two-headed arrow between the circles
-      const x1 = leftX + d / 2 + 8, x2 = rightX - d / 2 - 8;
+      const y1 = topY + d / 2 + 6, y2 = bottomY - d / 2 - 6;
       const line = {strokeWidth: 2, roughness: 1, seed: i + 10};
-      rc.line(x1, y, x2, y, line);
-      rc.line(x1, y, x1 + 9, y - 6, line);
-      rc.line(x1, y, x1 + 9, y + 6, line);
-      rc.line(x2, y, x2 - 9, y - 6, line);
-      rc.line(x2, y, x2 - 9, y + 6, line);
+      rc.line(x, y1, x, y2, line);
+      rc.line(x, y1, x - 6, y1 + 8, line);
+      rc.line(x, y1, x + 6, y1 + 8, line);
+      rc.line(x, y2, x - 6, y2 - 8, line);
+      rc.line(x, y2, x + 6, y2 - 8, line);
     });
   }
 
@@ -340,10 +342,8 @@ const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
   "and each layer of paint blocks some of those wavelengths from reaching your eyes.<br><br>" +
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
-  `and together they read as ${MAGENTA}.`;
-
-// sits under the opposites diagram, between it and the mixer
-const PAINT_CLOSING = `In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.`;
+  `and together they read as ${MAGENTA}.<br><br>` +
+  `In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.`;
 
 const LIGHT_TITLE = 'Light mixing (additive)';
 const PAINT_TITLE = 'Paint mixing (subtractive)';
@@ -370,42 +370,32 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  TextBox({text: PAINT_TEXT, x: 50, y: 65, w: 400, size: '21px', align: 'left', lineHeight: '1.35'});
+  TextBox({text: PAINT_TEXT, x: 50, y: 100, w: 400, size: '23px', align: 'left', lineHeight: '1.35'});
 
+  // the arrows diagram sits right above the mixer
   const row = rightColumn();
-  row.style.gap = '20px';
-  row.style.alignItems = 'center';
-  diagramWithClosing(row, '19px');
+  row.style.flexDirection = 'column';
+  row.style.gap = '6px';
+  makeOppositesDiagram(row);
   makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 250, canvasH: 280, brushSize: 42, fontSize: '20px', clearInline: false});
+    canvasW: 360, canvasH: 200, brushSize: 38, fontSize: '20px', clearInline: true});
 }
 
 export function PaintMixingMobile() {
   const W = window.innerWidth;
-  const panelW = Math.min(190, W - DIAGRAM_W - 25);
+  const canvasW = Math.min(300, W - 40);
   layoutMobile(PAINT_TEXT, 19, (row) => {
-    row.style.alignItems = 'center';
-    diagramWithClosing(row, '16px');
-    makePanel(row, {title: 'Paint mixing<br>(subtractive)', colors: CMY_COLORS, mode: 'subtractive',
-      canvasW: panelW, canvasH: 190, brushSize: 28, fontSize: '18px', clearInline: false});
+    // one column: the arrows diagram right above the mixer
+    const col = document.createElement('div');
+    col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
+    row.appendChild(col);
+    makeOppositesDiagram(col);
+    makePanel(col, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
+      canvasW, canvasH: 150, brushSize: 28, fontSize: '18px', clearInline: true});
   });
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
-
-// the opposites diagram with the closing line under it, as one column
-function diagramWithClosing(row, fontSize) {
-  const col = document.createElement('div');
-  col.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:6px;width:${DIAGRAM_W}px;flex-shrink:0;`;
-  makeOppositesDiagram(col);
-  const closing = document.createElement('div');
-  closing.className = 'object textbox'; // fades in with the rest of the slide
-  closing.innerHTML = PAINT_CLOSING;
-  closing.style.cssText = `position:static;font-size:${fontSize};line-height:1.25;text-align:center;`;
-  col.appendChild(closing);
-  row.appendChild(col);
-  return col;
-}
 
 // desktop: the mixer (and diagram) centered in the space right of the text,
 // above the BACK/NEXT buttons
