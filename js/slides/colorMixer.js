@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=24';
-import {onResize, mobileContentBottom} from '../utils.js?v=24';
+import {TextBox} from '../components.js?v=25';
+import {onResize, mobileContentBottom} from '../utils.js?v=25';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -95,19 +95,12 @@ function prefillVennDiagram(layers, canvasW, canvasH, brushSize) {
 // Light layers are colored light on black, added together ('lighter').
 // Paint layers are colored pigment on white, multiplied together, so cyan
 // over magenta leaves only blue, the way stacked filters or paints would.
-function makePanel(container, {title, colors, mode, canvasW, canvasH, brushSize, fontSize, clearInline}) {
+function makePanel(container, {colors, mode, canvasW, canvasH, brushSize, fontSize, clearInline}) {
   const isSubtractive = mode === 'subtractive';
   const bgColor = isSubtractive ? '#fff' : '#000';
 
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:8px;`;
-
-  // Title
-  const titleEl = document.createElement('div');
-  titleEl.className = 'object'; // fades in with the rest of the slide
-  titleEl.innerHTML = title;
-  titleEl.style.cssText = `font-family:Gaegu,cursive;font-size:${fontSize};font-weight:bold;color:#222;text-align:center;position:static;`;
-  wrapper.appendChild(titleEl);
 
   // Display canvas
   const canvas = document.createElement('canvas');
@@ -360,13 +353,11 @@ const PAINT_TEXT =
   `Paint works the other way around. A ${WHITE} canvas reflects every wavelength of visible light, ` +
   "and each layer of paint blocks some of those wavelengths from reaching your eyes. " +
   `For example, if we block ${GREEN} light, only our ${RED} and ${BLUE} cones are left firing ` +
-  `and together they read as <span class='note-anchor'>${MAGENTA}.<button type='button' class='note-star' ` +
-  `aria-label='Why red, yellow and blue?' aria-expanded='false'>*</button>` +
+  `and together they read as ${MAGENTA}.<span class='note-anchor'><button type='button' class='note-link' ` +
+  `aria-expanded='false'>why not red, yellow, blue?</button>` +
   `<span class='note-popup' hidden>In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.</span>` +
   `</span>`;
 
-const LIGHT_TITLE = 'Light mixing (additive)';
-const PAINT_TITLE = 'Paint mixing (subtractive)';
 
 // ── Light slide ────────────────────────────────────────────────────────────
 
@@ -374,15 +365,15 @@ export function LightMixingDesktop() {
   TextBox({text: LIGHT_TEXT, x: 50, y: 110, w: 400, size: '25px', align: 'left', lineHeight: '1.35'});
 
   const row = rightColumn();
-  makePanel(row, {title: LIGHT_TITLE, colors: RGB_COLORS, mode: 'additive',
-    canvasW: 330, canvasH: 330, brushSize: 50, fontSize: '22px', clearInline: true});
+  makePanel(row, {colors: RGB_COLORS, mode: 'additive',
+    canvasW: 370, canvasH: 370, brushSize: 52, fontSize: '22px', clearInline: true});
 }
 
 export function LightMixingMobile() {
   const W = window.innerWidth;
-  const side = Math.min(300, W - 40);
+  const side = Math.min(320, W - 40);
   layoutMobile(LIGHT_TEXT, 21, (row) => {
-    makePanel(row, {title: LIGHT_TITLE, colors: RGB_COLORS, mode: 'additive',
+    makePanel(row, {colors: RGB_COLORS, mode: 'additive',
       canvasW: side, canvasH: side, brushSize: 40, fontSize: '20px', clearInline: true});
   });
 }
@@ -390,18 +381,20 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  const text = TextBox({text: PAINT_TEXT, x: 50, y: 130, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
+  const text = TextBox({text: PAINT_TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
   setupNote(text);
 
-  // the arrows diagram sits right above the mixer, both from the top
+  // the arrows diagram sits right above the mixer, both from the top and
+  // pulled in next to the paragraph
   const row = rightColumn();
   row.style.flexDirection = 'column';
   row.style.justifyContent = 'flex-start';
+  row.style.alignItems = 'flex-start';
   row.style.top = '60px';
-  row.style.gap = '6px';
+  row.style.gap = '8px';
   makeOppositesDiagram(row);
-  makePanel(row, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 360, canvasH: 230, brushSize: 38, fontSize: '20px', clearInline: true});
+  makePanel(row, {colors: CMY_COLORS, mode: 'subtractive',
+    canvasW: 440, canvasH: 270, brushSize: 42, fontSize: '20px', clearInline: true});
 }
 
 export function PaintMixingMobile() {
@@ -413,19 +406,19 @@ export function PaintMixingMobile() {
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
     row.appendChild(col);
     makeOppositesDiagram(col);
-    makePanel(col, {title: PAINT_TITLE, colors: CMY_COLORS, mode: 'subtractive',
-      canvasW, canvasH: 190, brushSize: 28, fontSize: '18px', clearInline: true});
+    makePanel(col, {colors: CMY_COLORS, mode: 'subtractive',
+      canvasW, canvasH: 220, brushSize: 28, fontSize: '18px', clearInline: true});
   });
   setupNote(text);
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────────
 
-// Wires up a clickable * (.note-star) in el: it opens and closes its
+// Wires up a clickable link (.note-link) in el: it opens and closes its
 // .note-popup, and a tap anywhere else closes it. The popup floats, so
 // nothing moves, and it shifts left if it would run off the slide.
 function setupNote(el) {
-  const star = el.querySelector('.note-star');
+  const star = el.querySelector('.note-link');
   const note = el.querySelector('.note-popup');
   // the text box fades in, which makes it its own layer, so lift the whole
   // box above BACK/NEXT for the popup to show over them

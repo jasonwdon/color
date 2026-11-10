@@ -173,42 +173,34 @@ wired-button:hover {
   line-height: 1;
 }
 
-/* the * after "magenta" on the paint slide, and the note it opens. The note floats over what's below, so opening it moves nothing. */
+/* the "why not red, yellow, blue?" link on the paint slide, and the note
+   it opens. The note floats over what's below, so opening it moves nothing. */
 .note-anchor {
   position: relative;
-  white-space: nowrap;
 }
 
-.note-star {
-  /* a plain *, one em tall so it never makes its line taller, and nudged
-     up a touch with relative positioning (not vertical-align) */
-  position: relative;
-  top: -0.1em;
-  margin: 0 0 0 1px;
+.note-link {
+  /* small, muted and dotted-underlined so it reads as something to tap,
+     with line-height 1 so it never makes its line taller */
+  margin: 0 0 0 4px;
   padding: 0;
   border: none;
   background: none;
-  color: #c00;
-  font: inherit;
-  font-weight: bold;
+  color: #888;
+  font-family: Gaegu, cursive;
+  font-size: 0.65em;
   line-height: 1;
   vertical-align: baseline;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
 }
 
-/* a bigger invisible tap target that doesn't take any room */
-.note-star::after {
-  content: '';
-  position: absolute;
-  left: -10px;
-  right: -10px;
-  top: -14px;
-  bottom: -14px;
-}
-
-.note-star:hover {
-  color: #f33;
+.note-link:hover,
+.note-link[aria-expanded='true'] {
+  color: #444;
 }
 
 .note-popup {
