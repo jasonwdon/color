@@ -30,12 +30,26 @@ canvas {
 }
 
 @media (max-width: 480px) {
+  /* The deck fits the screen, so the page never scrolls. Scrolling made the
+     browser bars slide in and out, which resized and redrew the slide. */
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   body {
+    position: fixed;
+    inset: 0;
+    margin: 0;
     padding-top: 0;
   }
   #sandbox {
     flex: 0 0 100vw;
     height: 100svh;
+  }
+  /* drags on the canvas (spectrum handle, painting) never pan or zoom the page */
+  canvas {
+    touch-action: none;
   }
   .next-button {
     left: auto !important;

@@ -77,7 +77,7 @@ Each slide function signature: `(rc, ctx, interval)` where `rc` is a rough.js ca
 
 | | Desktop | Mobile |
 |---|---|---|
-| Canvas | 900 × 500 | `innerWidth × (innerHeight − 100)` |
+| Canvas | 900 × 500 | `innerWidth × (sandbox height − 100)` |
 | Sandbox (`#sandbox`) | 1000 × 600 fixed | `100vw × 100svh` |
 | Canvas offset in sandbox | **50px on all sides** | **0px horizontal, 50px vertical** |
 
@@ -226,13 +226,8 @@ The 8 corners of the RYB cube are mapped to perceptually reasonable RGB values (
 
 ## Resize Handling
 
-Resize is debounced at 150ms:
-```js
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => showSlide(slideIndex), 150);
-});
-```
+Resize is debounced at 150ms, and only redraws when the width changes or the phone breakpoint flips. Phones fire height-only resizes as the browser bars slide in and out, and redrawing on those made the slide flash.
+
+On phones the page never scrolls: `html`/`body` are fixed with `overflow: hidden`, the sandbox is `100svh`, and canvases have `touch-action: none`. Every mobile slide has to fit in the screen, since nothing below it can be scrolled to.
 
 `showSlide` fully rebuilds the slide (clears sandbox, recreates canvas, re-runs the slide function). Each slide function reads fresh layout values so it adapts automatically.

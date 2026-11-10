@@ -1,7 +1,7 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button} from './components.js?v=8';
-import {clearSandbox, setDimensions} from './utils.js?v=8';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ColorMixerDesktop, ColorMixerMobile} from './slides/AllSlides.js?v=8';
+import {Button} from './components.js?v=9';
+import {clearSandbox, setDimensions} from './utils.js?v=9';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ColorMixerDesktop, ColorMixerMobile} from './slides/AllSlides.js?v=9';
 
 let interval = {id: null};
 let slideIndex = 0;
@@ -19,7 +19,11 @@ document.addEventListener("DOMContentLoaded", init);
 function getLayout() {
   const isMobile = window.matchMedia('(max-width: 480px)').matches;
   const width  = isMobile ? window.innerWidth : 900;
-  const height = isMobile ? window.innerHeight - 100 : 500;
+  // On phones the sandbox is 100svh, the screen height with the browser bars
+  // showing, which doesn't change as the bars slide in and out. Taking the
+  // canvas height from it (rather than innerHeight) keeps it steady.
+  const sandboxH = document.getElementById('sandbox').clientHeight || window.innerHeight;
+  const height = isMobile ? sandboxH - 100 : 500;
   return { width, height, isMobile };
 }
 
@@ -29,10 +33,21 @@ function init() {
   slideIndex = namedIndex >= 0 ? namedIndex : 0;
   showSlide(slideIndex);
 
+  // Phones fire resize when the browser bars show or hide, which only changes
+  // the height. Redrawing then makes the slide flash, so only redraw when the
+  // width changes (e.g. turning the phone) or we cross the phone breakpoint.
+  let lastWidth = window.innerWidth;
+  let lastMobile = getLayout().isMobile;
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => showSlide(slideIndex), 150);
+    resizeTimer = setTimeout(() => {
+      const { isMobile } = getLayout();
+      if (window.innerWidth === lastWidth && isMobile === lastMobile) return;
+      lastWidth = window.innerWidth;
+      lastMobile = isMobile;
+      showSlide(slideIndex);
+    }, 150);
   });
 }
 
