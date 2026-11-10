@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=34';
-import {onResize, mobileContentBottom} from '../utils.js?v=34';
+import {TextBox} from '../components.js?v=35';
+import {onResize, mobileContentBottom} from '../utils.js?v=35';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -411,6 +411,7 @@ export function PaintMixingDesktop() {
   group.style.cssText = 'position:absolute;left:50px;width:400px;display:flex;flex-direction:column;align-items:center;';
   document.getElementById('sandbox').appendChild(group);
   makeCaptionedDiagram(group);
+  revealAfterFonts(group);
   // a little more air between the diagram and its caption than on phones
   group.querySelector('.diagram-caption').style.marginTop = '6px';
   onResize([text], () => {
@@ -488,6 +489,25 @@ function rightColumn() {
 // phones: text at the top, then a row of content below wherever the text
 // actually ends. On short screens the text shrinks a little first, then the
 // row shrinks to fit above the buttons.
+// The handwritten font loads after the first layout on a fresh visit, and
+// the paragraph rewraps when it arrives, which moves whatever sits under the
+// text. Keep that content hidden until the font is in and the layout has
+// settled, then fade it in.
+function revealAfterFonts(el) {
+  el.style.opacity = '0';
+  const show = () => {
+    if (el.style.opacity !== '0') return;
+    el.style.transition = 'opacity 0.4s ease-in';
+    el.style.opacity = '1';
+  };
+  const fonts = document.fonts
+    ? Promise.all([document.fonts.load('20px Gaegu'), document.fonts.load('bold 20px Gaegu')])
+    : Promise.resolve();
+  // two frames so the resize handlers have placed everything
+  fonts.catch(() => {}).then(() => requestAnimationFrame(() => requestAnimationFrame(show)));
+  setTimeout(show, 2000); // never leave it hidden if the font is slow
+}
+
 // the gap under the paint slide's caption on phones
 const SPACER_MIN = 6, SPACER_MAX = 20;
 
@@ -503,6 +523,7 @@ function layoutMobile(textHtml, startSize, fill, spacer = null) {
   row.style.cssText = `position:absolute;left:0;right:0;display:flex;gap:10px;justify-content:center;align-items:flex-start;transform-origin:top center;`;
   sandbox.appendChild(row);
   fill(row);
+  revealAfterFonts(row);
 
   onResize([text, row], () => {
     // with a spacer, the row sits right under the text and spare room goes
