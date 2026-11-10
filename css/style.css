@@ -222,7 +222,8 @@ wired-button:hover {
   left: 0;
   top: calc(100% + 4px);
   z-index: 10;
-  width: 240px;
+  width: 340px;
+  box-sizing: border-box;
   white-space: normal;
   padding: 8px 12px;
   background: #fff;
@@ -230,7 +231,7 @@ wired-button:hover {
   border-radius: 8px;
   box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.15);
   font-family: Gaegu, cursive;
-  font-size: 19px;
+  font-size: 18px;
   line-height: 1.25;
   text-align: left;
   color: #222;

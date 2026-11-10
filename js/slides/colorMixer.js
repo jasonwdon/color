@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=27';
-import {onResize, mobileContentBottom} from '../utils.js?v=27';
+import {TextBox} from '../components.js?v=28';
+import {onResize, mobileContentBottom} from '../utils.js?v=28';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -370,7 +370,10 @@ const PAINT_TEXT =
 // caption under the arrows diagram, which opens a note about school
 const CAPTION =
   `<button type='button' class='note-link' aria-expanded='false'>Not red, yellow, blue?</button>` +
-  `<span class='note-popup' hidden>In school, we learned ${RED}, ${YELLOW} and ${BLUE} because it was simpler.</span>`;
+  `<span class='note-popup' hidden>The RYB model dates back to 18th-century art theory, before light absorption ` +
+  "and human vision were fully understood. Because early painters relied on naturally occurring minerals and dyes, " +
+  "RYB became the standard teaching model for generations. Modern color science eventually replaced it with CMY and RGB, " +
+  "but the traditional model simply stuck around in early education.</span>`;
 
 
 // ── Light slide ────────────────────────────────────────────────────────────
@@ -439,10 +442,20 @@ function setupNote(el) {
     note.hidden = !open;
     star.setAttribute('aria-expanded', String(open));
     if (!open) return;
-    note.style.left = '0px';
+    // as wide as reads well, but never wider than the screen
     const sandbox = document.getElementById('sandbox').getBoundingClientRect();
-    const overflow = note.getBoundingClientRect().right - (sandbox.right - 8);
-    if (overflow > 0) note.style.left = -Math.ceil(overflow) + 'px';
+    note.style.width = Math.min(340, sandbox.width - 24) + 'px';
+    // centered under the link, then nudged back inside the sandbox
+    note.style.top = '';
+    let left = star.offsetLeft + (star.offsetWidth - note.offsetWidth) / 2;
+    note.style.left = left + 'px';
+    let box = note.getBoundingClientRect();
+    if (box.right > sandbox.right - 8) left -= box.right - (sandbox.right - 8);
+    else if (box.left < sandbox.left + 8) left += (sandbox.left + 8) - box.left;
+    note.style.left = Math.round(left) + 'px';
+    // open upward if it would run off the bottom
+    box = note.getBoundingClientRect();
+    if (box.bottom > sandbox.bottom - 8) note.style.top = `${-note.offsetHeight - 4}px`;
   };
   star.addEventListener('click', () => setOpen(note.hidden));
   const closeOutside = (e) => {
