@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=30';
-import {onResize, mobileContentBottom} from '../utils.js?v=30';
+import {TextBox} from '../components.js?v=31';
+import {onResize, mobileContentBottom} from '../utils.js?v=31';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -384,7 +384,7 @@ const CAPTION =
 // ── Light slide ────────────────────────────────────────────────────────────
 
 export function LightMixingDesktop() {
-  TextBox({text: LIGHT_TEXT, x: 50, y: 110, w: 400, size: '25px', align: 'left', lineHeight: '1.35'});
+  TextBox({text: LIGHT_TEXT, x: 50, y: 60, w: 400, size: '25px', align: 'left', lineHeight: '1.35'});
 
   const row = rightColumn();
   makePanel(row, {colors: RGB_COLORS, mode: 'additive',
@@ -403,19 +403,22 @@ export function LightMixingMobile() {
 // ── Paint slide ────────────────────────────────────────────────────────────
 
 export function PaintMixingDesktop() {
-  TextBox({text: PAINT_TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
+  const text = TextBox({text: PAINT_TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
 
-  // the arrows diagram sits right above the mixer, both from the top and
-  // pulled in next to the paragraph
+  // the arrows diagram and its caption sit under the paragraph, centered to
+  // it, and follow it down as the font loads and the text rewraps
+  const group = document.createElement('div');
+  group.style.cssText = 'position:absolute;left:50px;width:400px;display:flex;flex-direction:column;align-items:center;';
+  document.getElementById('sandbox').appendChild(group);
+  makeCaptionedDiagram(group);
+  onResize([text], () => {
+    group.style.top = (text.offsetTop + text.offsetHeight + 16) + 'px';
+  });
+
+  // the mixer gets the right side to itself
   const row = rightColumn();
-  row.style.flexDirection = 'column';
-  row.style.justifyContent = 'flex-start';
-  row.style.alignItems = 'flex-start';
-  row.style.top = '60px';
-  row.style.gap = '8px';
-  makeCaptionedDiagram(row);
   makePanel(row, {colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 440, canvasH: 254, brushSize: 42, fontSize: '20px', clearInline: true});
+    canvasW: 420, canvasH: 370, brushSize: 48, fontSize: '22px', clearInline: true});
 }
 
 export function PaintMixingMobile() {

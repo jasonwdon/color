@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js?v=30';
-import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=30';
+import {TextBox, Slider} from '../components.js?v=31';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=31';
 
 const DELAY = 50;
 const GRAPH_MIN = 400, GRAPH_MAX = 650;
@@ -28,7 +28,7 @@ const TEXT =
 
 // all x/y values are sandbox coords; the draw code converts them to canvas coords
 const DESKTOP_L = {
-  textX: 50,  textY: 140, textW: 400, textSize: '24px',
+  textX: 50,  textY: 60, textW: 400, textSize: '24px',
   graphX: 490, graphY: 70, graphW: 400, graphH: 90,  graphGap: 115,
   sliderX: 490, sliderY: 455, sliderW: 400,
   rainbowH: 18,
