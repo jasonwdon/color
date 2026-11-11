@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=39';
-import {onResize, mobileContentBottom} from '../utils.js?v=39';
+import {TextBox} from '../components.js?v=40';
+import {onResize, mobileContentBottom} from '../utils.js?v=40';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -401,7 +401,7 @@ export function LightMixingDesktop() {
 
   const row = rightColumn();
   makePanel(row, {colors: RGB_COLORS, mode: 'additive',
-    canvasW: 370, canvasH: 370, brushSize: 52, fontSize: '22px', clearInline: true});
+    canvasW: 400, canvasH: 370, brushSize: 50, fontSize: '22px', clearInline: true});
 }
 
 export function LightMixingMobile() {
@@ -435,7 +435,7 @@ export function PaintMixingDesktop() {
   // the mixer gets the right side to itself
   const row = rightColumn();
   makePanel(row, {colors: CMY_COLORS, mode: 'subtractive',
-    canvasW: 420, canvasH: 370, brushSize: 48, fontSize: '22px', clearInline: true});
+    canvasW: 400, canvasH: 370, brushSize: 50, fontSize: '22px', clearInline: true});
 }
 
 export function PaintMixingMobile() {
