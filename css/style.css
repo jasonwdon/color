@@ -97,17 +97,10 @@ canvas {
   font-family: Gaegu;
 }
 
-/* everything you can press shows the pointing hand (wired-elements doesn't
+/* sliders show the pointing hand like the buttons do (wired-slider doesn't
    set one itself) */
-wired-button, wired-slider, wired-radio, wired-checkbox, wired-toggle,
-a, button, label, input[type=checkbox], input[type=radio], select {
+wired-slider {
   cursor: pointer;
-}
-
-/* the mixers' drawing canvases show a pencil whenever you're over them,
-   with its tip where the paint goes (a crosshair if the pencil can't load) */
-.draw-canvas {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 23 L6 15 L11 20 Z M6 15 L19 2 L24 7 L11 20 M16.5 4.5 L21.5 9.5' stroke='white' stroke-width='4'/%3E%3Cpath d='M3 23 L6 15 L11 20 Z M6 15 L19 2 L24 7 L11 20 M16.5 4.5 L21.5 9.5' stroke='black' stroke-width='1.8'/%3E%3C/svg%3E") 3 23, crosshair;
 }
 
 wired-button:hover {
