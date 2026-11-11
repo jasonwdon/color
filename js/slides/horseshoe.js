@@ -129,17 +129,17 @@ const T = {raysIn: [0.3, 0.9], sweep: [0.9, 2.6], turn: [3.1, 4.8], fade: [3.1, 
 
 const TEXT = [
   "Every line out from black is one color getting brighter.",
-  "Cut through all those lines with one flat slice, and each color shows up exactly once, " +
+  "Cut through all those lines with one flat slice, and each color shows up once, " +
     "with its brightness thrown away.",
-  "Lay the slice flat and you get the famous horseshoe. Its curved edge is single wavelengths, " +
-    "the straight bottom is purples, and every color you can see is somewhere inside.<br><br>" +
-    "<span style='font-size:0.8em;color:#666'>Its x and y are a standard remix of your L, M and S numbers.</span>",
+  "Lay the slice flat and you get the famous horseshoe: single wavelengths around the curve, " +
+    "purples along the bottom, and every color you can see inside. " +
+    "<span style='font-size:0.8em;color:#666'>(Its x and y are a standard remix of your L, M and S numbers.)</span>",
 ];
 const PARA_AT = [0, T.sweep[0], T.chart[0]];
 
 function slideText() {
   return TEXT.map((t, i) => `<span class="hs-p" style="display:block;transition:opacity 0.8s;` +
-    `opacity:${i ? 0 : 1};margin-bottom:0.8em">${t}</span>`).join('');
+    `opacity:${i ? 0 : 1};margin-bottom:0.7em">${t}</span>`).join('');
 }
 
 // ── Slide ──────────────────────────────────────────────────────────────────
@@ -235,7 +235,7 @@ function startHorseshoe(container, interval, phone, text) {
     const dotR = Math.max(2.5, plot.side() / 130);
 
     // where the chart ends up
-    const ml = fontPx * 2.2, mb = fontPx * 2.2, mt = fontPx * 0.6, mr = fontPx * 0.6;
+    const ml = fontPx * 1.3, mb = fontPx * 2.4, mt = fontPx * 0.6, mr = fontPx * 0.6;
     const s = Math.min((W - ml - mr) / CHART_X, (H - mt - mb) / CHART_Y);
     const ox = ml + (W - ml - mr - CHART_X * s) / 2, oy = H - mb - (H - mt - mb - CHART_Y * s) / 2;
     const chartAff = [s, 0, 0, -s, ox, oy];
@@ -359,30 +359,24 @@ function startHorseshoe(container, interval, phone, text) {
     p = at(CHART_X, 0);
     ctx.lineTo(p[0], p[1]);
     ctx.stroke();
-    ctx.font = `${Math.round(fontPx * 0.75)}px Gaegu`;
-    ctx.fillStyle = '#555';
-    ctx.textBaseline = 'middle';
-    for (let v = 0; v <= 0.81; v += 0.2) {
+    // ticks every 0.2, without numbers, which would crowd the wavelengths
+    ctx.beginPath();
+    for (let v = 0.2; v <= 0.81; v += 0.2) {
       const a = at(v, 0), b = at(0, v);
-      ctx.beginPath();
       ctx.moveTo(a[0], a[1]);
       ctx.lineTo(a[0], a[1] + 4);
-      if (v <= CHART_Y) { ctx.moveTo(b[0], b[1]); ctx.lineTo(b[0] - 4, b[1]); }
-      ctx.stroke();
-      const txt = v === 0 ? '0' : v.toFixed(1);
-      ctx.textAlign = 'center';
-      ctx.fillText(txt, a[0], a[1] + fontPx * 0.75);
-      if (v > 0) {
-        ctx.textAlign = 'right';
-        ctx.fillText(txt, b[0] - 6, b[1]);
-      }
+      ctx.moveTo(b[0], b[1]);
+      ctx.lineTo(b[0] - 4, b[1]);
     }
+    ctx.stroke();
     ctx.font = `bold ${fontPx}px Gaegu`;
+    ctx.fillStyle = '#555';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     let q = at(CHART_X / 2, 0);
-    ctx.fillText('x', q[0], q[1] + fontPx * 1.55);
+    ctx.fillText('x', q[0], q[1] + fontPx * 0.75);
     q = at(0, CHART_Y / 2);
-    ctx.fillText('y', q[0] - fontPx * 1.6, q[1]);
+    ctx.fillText('y', q[0] - fontPx * 0.7, q[1]);
 
     // white in the middle
     q = at(1 / 3, 1 / 3);
