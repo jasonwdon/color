@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=42';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=42';
+import {TextBox} from '../components.js?v=43';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=43';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -497,7 +497,11 @@ function makePlot(container, interval) {
       label(ax.label, p[0], p[1], ax.color, fontPx);
     });
     ctx.globalAlpha = 1;
+    // black sits at the corner where the axes meet, behind the solid when
+    // all three are
+    ctx.globalAlpha = boxEdges.some(b => b.axis >= 0 && b.front) ? 1 : 0.5;
     label('black', o[0], o[1] + fontPx * 0.9, '#333', Math.round(fontPx * 0.85));
+    ctx.globalAlpha = 1;
     ctx.textBaseline = 'alphabetic';
   }
 
