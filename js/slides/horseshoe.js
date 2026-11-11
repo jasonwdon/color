@@ -221,6 +221,7 @@ function startHorseshoe(container, interval, phone, text) {
     if (reduced) start = now - T.end;
     if (start === null) start = now;
     t = now - start;
+    const DBG = new URLSearchParams(location.search).get('hst'); if (DBG) t = parseFloat(DBG); // DEBUG-REMOVE
     paras.forEach((p, i) => { p.style.opacity = t >= PARA_AT[i] ? '1' : '0'; });
     const a = span(t, ...T.turn1), b = span(t, ...T.turn2);
     const y1 = from.yaw + (mid.yaw - from.yaw) * a, p1 = from.pitch + (mid.pitch - from.pitch) * a;
