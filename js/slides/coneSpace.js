@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=45';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=45';
+import {TextBox} from '../components.js?v=46';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=46';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -32,16 +32,19 @@ const CONE_DATA = [
 
 // Common kinds of screen, by what their red, green and blue light each do to
 // the cones (from each standard's primaries and D65 white, through CIE 2012
-// XYZ). share is roughly how much of the colors we can see each one covers:
-// its triangle's share of the spectral locus's area in CIE 1976 u'v'.
+// XYZ). share is how much of the solid of real colors each one fills, by
+// volume in this plot, with the screen's white as bright as the box allows
+// (computed from the SOLID mesh below; it checks out against random sampling).
+// This is far less than the usual flat-chart figures (sRGB about 38% of the
+// u'v' horseshoe), because those ignore brightness.
 const SCREENS = [
-  {name: 'sRGB', note: 'most screens', share: 38, line: '#222', dash: [6, 4],
+  {name: 'sRGB', note: 'most screens', share: 10, line: '#222', dash: [6, 4],
     primaries: [[0.2679, 0.07985, 0.00999], [0.68211, 0.70217, 0.0616], [0.062, 0.08445, 0.49127]]},
-  {name: 'Adobe RGB', note: 'photo editing', share: 44, line: '#6a3fc9', dash: [2, 3],
+  {name: 'Adobe RGB', note: 'photo editing', share: 14, line: '#6a3fc9', dash: [2, 3],
     primaries: [[0.37462, 0.11166, 0.01397], [0.57272, 0.66674, 0.03653], [0.06466, 0.08808, 0.51236]]},
-  {name: 'Display P3', note: 'newer phones', share: 47, line: '#c2410c', dash: [10, 4],
+  {name: 'Display P3', note: 'newer phones', share: 14, line: '#c2410c', dash: [10, 4],
     primaries: [[0.29826, 0.06663, 0], [0.64566, 0.7071, 0.02332], [0.0681, 0.09275, 0.53955]]},
-  {name: 'Rec. 2020', note: 'future TVs', share: 65, line: '#0b7285', dash: [8, 3, 2, 3],
+  {name: 'Rec. 2020', note: 'future TVs', share: 20, line: '#0b7285', dash: [8, 3, 2, 3],
     primaries: [[0.35876, 0.04361, 0], [0.60909, 0.74007, 0.01451], [0.04415, 0.0828, 0.54835]]},
 ];
 
@@ -84,13 +87,13 @@ const EDGE = (() => {
 })();
 
 // The colors each screen can make: every mix of its red, green and blue, a
-// slanted box. All share the same white, scaled to sit inside the box, so
-// the boxes can be compared.
+// slanted box. All share the same white (D65), as bright as the box allows,
+// so the boxes can be compared and their volumes match the shares above.
 const GAMUT_EDGES = [];
 for (let a = 0; a < 8; a++) for (const bit of [1, 2, 4]) if (!(a & bit)) GAMUT_EDGES.push([a, a | bit]);
 (() => {
   const white = [0, 1, 2].map(i => SCREENS[0].primaries.reduce((s, p) => s + p[i], 0));
-  const k = 0.85 / maxOf(white);
+  const k = 1 / maxOf(white);
   for (const scr of SCREENS) {
     scr.corners = [];
     for (let n = 0; n < 8; n++) {
@@ -247,7 +250,7 @@ function makePlot(container, interval, phone) {
   if (!phone) {
     const head = document.createElement('div');
     head.innerHTML = '<b style="text-shadow:none">Screens</b><br>' +
-      '<span style="font-size:15px;color:#777">what each can show, and roughly how much of what you can see</span>';
+      '<span style="font-size:15px;color:#777">what each can show, and how much of the shape that fills</span>';
     head.style.lineHeight = '1.1';
     list.appendChild(head);
   }
@@ -276,7 +279,7 @@ function makePlot(container, interval, phone) {
   }
   if (phone) {
     const note = document.createElement('div');
-    note.textContent = 'screens: what each can show, and roughly what share of the colors you can see';
+    note.textContent = 'screens: what each can show, and how much of the shape that fills';
     note.style.cssText = 'flex-basis:100%;text-align:center;font-size:14px;color:#777;line-height:1.1;';
     list.prepend(note);
   }
@@ -289,7 +292,7 @@ function makePlot(container, interval, phone) {
   // up and down tilts it toward or away from you, never past straight
   // above or below, so it can't end up upside down. Starts turned so all
   // three axes show, looking at the side with the rainbow curve on it.
-  let yaw = 0.2, pitch = 0.38;
+  let yaw = -0.29, pitch = 0.33;
   const MAX_PITCH = Math.PI / 2 - 0.05;
   let rot = matMul(rotX(pitch), rotY(yaw));
   let zoom = 1;
