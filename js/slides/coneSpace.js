@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=41';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=41';
+import {TextBox} from '../components.js?v=42';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=42';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -41,11 +41,11 @@ const SCREEN_PRIMARIES = [
 const L_COLOR = 'rgb(230,60,60)', M_COLOR = 'rgb(60,160,60)', S_COLOR = 'rgb(70,70,240)';
 
 const TEXT =
-  "Hold that thought. First, a map of every color.<br><br>" +
+  "One last thing: here's every color at once.<br><br>" +
   "Every color you've ever seen comes down to 3 numbers: how hard your " +
   "<b style='color:red'>L</b>, <b style='color:green'>M</b>, and <b style='color:blue'>S</b> cones fire. " +
   "So every color is a point in this box.<br><br>" +
-  "Single wavelengths trace the curve, and every mix of light lands inside its shape. " +
+  "Single wavelengths trace the dark curve, and every mix of light lands inside the shape. " +
   "The rest is empty, because our cones overlap and no light can make those combinations.";
 
 // ── Geometry ───────────────────────────────────────────────────────────────
@@ -97,6 +97,57 @@ const SCREEN = (() => {
 // the middle of the box at the origin: L along x, S up, M along z
 const toWorld = ([l, m, s]) => [l - 0.5, s - 0.5, m - 0.5];
 
+// The solid of real colors as a mesh of quads with outward normals. It's
+// convex (every mix of two real colors is real too), so drawing only the
+// quads that face the camera is enough to hide the back.
+//  - the sides: each pair of neighboring rays from black out to the walls,
+//    in bands that go from black to the ray's color
+//  - the cap: where the solid meets the walls of the box, from white in the
+//    middle out to the edge colors, bent to lie on the walls
+const SOLID = (() => {
+  const BANDS = 8, RINGS = 8;
+  const n = EDGE.length;
+  const quads = [];
+  const scale = (v, t) => v.map(c => c * t);
+  const onWall = (v) => v.map(c => c / maxOf(v));
+  const mixV = (a, b, t) => a.map((c, i) => (1 - t) * c + t * b[i]);
+  const avgRgb = (a, b) => a.map((c, i) => (c + b[i]) / 2);
+  for (let i = 0; i < n; i++) {
+    const a = EDGE[i], b = EDGE[(i + 1) % n];
+    const rgb = avgRgb(a.rgb, b.rgb);
+    for (let k = 0; k < BANDS; k++) {
+      const t0 = k / BANDS, t1 = (k + 1) / BANDS;
+      // brightness along the ray, gamma encoded like a screen would
+      const bright = Math.pow((t0 + t1) / 2, 1 / 2.2);
+      quads.push({side: i, pts: [scale(a.lms, t0), scale(b.lms, t0), scale(b.lms, t1), scale(a.lms, t1)],
+        rgb: rgb.map(c => c * bright)});
+    }
+    const WHITE = [1, 1, 1];
+    for (let k = 0; k < RINGS; k++) {
+      const t0 = k / RINGS, t1 = (k + 1) / RINGS;
+      const tm = (t0 + t1) / 2;
+      quads.push({cap: i, pts: [onWall(mixV(WHITE, a.lms, t0)), onWall(mixV(WHITE, b.lms, t0)),
+        onWall(mixV(WHITE, b.lms, t1)), onWall(mixV(WHITE, a.lms, t1))],
+        rgb: [255, 255, 255].map((c, j) => (1 - tm) * c + tm * rgb[j]), outer: k === RINGS - 1});
+    }
+  }
+  // outward normals, from a point inside the solid
+  const inside = [0.4, 0.4, 0.4];
+  const sub = (a, b) => a.map((c, i) => c - b[i]);
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  for (const q of quads) {
+    const [p0, p1, p2, p3] = q.pts.map(toWorld);
+    let nrm = cross(sub(p2, p0), sub(p3, p1));
+    const mid = [0, 1, 2].map(j => (p0[j] + p1[j] + p2[j] + p3[j]) / 4);
+    if (nrm.reduce((d, c, j) => d + c * (mid[j] - toWorld(inside)[j]), 0) < 0) nrm = nrm.map(c => -c);
+    const len = Math.hypot(...nrm) || 1;
+    q.normal = nrm.map(c => c / len);
+    q.mid = mid;
+  }
+  return quads;
+})();
+
+
 // ── Rotation ───────────────────────────────────────────────────────────────
 
 function matMul(a, b) {
@@ -110,16 +161,6 @@ function rotY(a) {
   const c = Math.cos(a), s = Math.sin(a);
   return [[c, 0, s], [0, 1, 0], [-s, 0, c]];
 }
-// keeps the rotation a clean rotation after many small turns
-function orthonormalize(m) {
-  const norm = (v) => { const l = Math.hypot(...v); return v.map(c => c / l); };
-  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  const x = norm(m[0]);
-  const y = norm(m[1].map((c, i) => c - dot(m[1], x) * x[i]));
-  const z = [x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2], x[0] * y[1] - x[1] * y[0]];
-  return [x, y, z];
-}
-
 // ── Slide ──────────────────────────────────────────────────────────────────
 
 export function ConeSpaceDesktop(rc, ctx, interval) {
@@ -179,7 +220,7 @@ function makePlot(container, interval) {
   const ctx = canvas.getContext('2d');
 
   const hint = document.createElement('div');
-  hint.textContent = 'drag to spin it around';
+  hint.textContent = 'drag to turn it';
   hint.style.cssText = 'position:absolute;left:0;right:0;bottom:2px;text-align:center;pointer-events:none;' +
     'font-family:Gaegu,cursive;font-size:18px;font-weight:bold;color:#777;';
   wrap.appendChild(hint);
@@ -200,21 +241,21 @@ function makePlot(container, interval) {
   setToggleText();
   toggle.addEventListener('click', () => { showScreen = !showScreen; setToggleText(); dirty = true; });
 
-  // start turned so all three axes show, then spin slowly until touched
-  let rot = matMul(rotX(0.42), rotY(-0.75));
+  // Turns like a globe on a stand: side to side spins it around the S axis,
+  // up and down tilts it toward or away from you, never past straight
+  // above or below, so it can't end up upside down. Starts turned so all
+  // three axes show.
+  let yaw = -0.7, pitch = 0.42;
+  const MAX_PITCH = Math.PI / 2 - 0.05;
+  let rot = matMul(rotX(pitch), rotY(yaw));
   let zoom = 1;
-  let spinning = true;
   let dirty = true;
 
   // ── dragging and zooming ──
   const pointers = new Map();
   let pinchDist = 0;
-  const stopSpin = () => {
-    spinning = false;
-    hint.remove();
-  };
   canvas.addEventListener('pointerdown', (e) => {
-    stopSpin();
+    hint.remove();
     pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
     canvas.setPointerCapture(e.pointerId);
     canvas.style.cursor = 'grabbing';
@@ -225,9 +266,12 @@ function makePlot(container, interval) {
     const p = pointers.get(e.pointerId);
     if (!p) return;
     if (pointers.size === 1) {
-      const dx = e.clientX - p.x, dy = e.clientY - p.y;
-      const k = 2.8 / side(); // a full drag across the plot is about half a turn
-      rot = orthonormalize(matMul(rotX(dy * k), matMul(rotY(dx * k), rot)));
+      // the side facing you follows the finger: drag right and it turns
+      // right, drag down and it tips down so you see more of the top
+      const k = Math.PI / side(); // a drag across the plot is about half a turn
+      yaw += (e.clientX - p.x) * k;
+      pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, pitch + (e.clientY - p.y) * k));
+      rot = matMul(rotX(pitch), rotY(yaw));
       dirty = true;
     }
     p.x = e.clientX;
@@ -247,7 +291,6 @@ function makePlot(container, interval) {
   canvas.addEventListener('pointercancel', release);
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
-    stopSpin();
     setZoom(zoom * Math.exp(-e.deltaY * 0.0015));
   }, {passive: false});
   function twoFingerDist() {
@@ -283,8 +326,6 @@ function makePlot(container, interval) {
     const scale = side() * 0.42 * zoom;
     return [width / 2 + r[0] * scale * f, height / 2 - r[1] * scale * f, r[2]];
   }
-  // fainter the farther back it is, so the front reads as the front
-  const fade = (depth) => 0.45 + 0.55 * Math.min(1, Math.max(0, (depth + 0.9) / 1.8));
 
   function draw() {
     if (!dirty) return;
@@ -292,100 +333,129 @@ function makePlot(container, interval) {
     ctx.clearRect(0, 0, width, height);
     const fontPx = Math.max(14, Math.round(side() / 22));
 
-    // the box: light edges, except the three from black, which are the axes
+    // where each point sits relative to the camera, for working out which
+    // way things face
+    const view = (w) => rot.map(row => row[0] * w[0] + row[1] * w[1] + row[2] * w[2]);
+    const facing = (q) => {
+      const n = view(q.normal), m = view(q.mid);
+      return n[0] * -m[0] + n[1] * -m[1] + n[2] * (CAMERA - m[2]) > 0;
+    };
+
+    // the box's edges and the axes (three of its edges): one in front of
+    // the solid when either of the box's faces beside it faces you
     const O = [0, 0, 0];
+    const o = project(O);
     const corners = [];
     for (let n = 0; n < 8; n++) corners.push([n & 1, (n >> 1) & 1, (n >> 2) & 1]);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#ccc';
-    ctx.beginPath();
-    for (let a = 1; a < 8; a++) for (const bit of [1, 2, 4]) {
+    const faceFacing = (axis, val) => {
+      const n = [0, 0, 0];
+      n[axis] = val ? 1 : -1;
+      const c = [0.5, 0.5, 0.5];
+      c[axis] = val;
+      return facing({normal: toWorld(n.map(x => x + 0.5)), mid: toWorld(c)});
+    };
+    const axisColors = [L_COLOR, M_COLOR, S_COLOR];
+    const boxEdges = [];
+    for (let a = 0; a < 8; a++) for (const [bit, axis] of [[1, 0], [2, 1], [4, 2]]) {
       if (a & bit) continue;
-      const pa = project(corners[a]), pb = project(corners[a | bit]);
-      ctx.moveTo(pa[0], pa[1]);
-      ctx.lineTo(pb[0], pb[1]);
+      const others = [0, 1, 2].filter(x => x !== axis);
+      const front = others.some(x => faceFacing(x, corners[a][x]));
+      boxEdges.push({from: corners[a], to: corners[a | bit], front, axis: a === 0 ? axis : -1});
     }
-    ctx.stroke();
+    const drawEdges = (front) => {
+      for (const e of boxEdges) {
+        if (e.front !== front) continue;
+        const pa = project(e.from), pb = project(e.to);
+        ctx.strokeStyle = e.axis >= 0 ? axisColors[e.axis] : '#ccc';
+        ctx.lineWidth = e.axis >= 0 ? 2.5 : 1;
+        ctx.beginPath();
+        ctx.moveTo(pa[0], pa[1]);
+        ctx.lineTo(pb[0], pb[1]);
+        ctx.stroke();
+      }
+    };
+    drawEdges(false);
 
-    // the solid of real colors: a fan of triangles from black out to its
-    // edge on the walls of the box, sorted back to front, each shading from
-    // black to its color
-    const o = project(O);
-    const edge = EDGE.map(e => ({...e, p: project(e.lms)}));
-    const tris = edge.map((e, i) => {
-      const n = edge[(i + 1) % edge.length];
-      return {a: e, b: n, depth: (o[2] + e.p[2] + n.p[2]) / 3};
-    }).sort((t, u) => t.depth - u.depth);
-    for (const {a, b} of tris) {
-      const mx = (a.p[0] + b.p[0]) / 2, my = (a.p[1] + b.p[1]) / 2;
-      const grad = ctx.createLinearGradient(o[0], o[1], mx, my);
-      grad.addColorStop(0, 'rgba(0,0,0,0.3)');
-      grad.addColorStop(1, `rgba(${a.rgb.join(',')},0.38)`);
-      ctx.fillStyle = grad;
+    // the solid: only the quads facing you, shaded by a light from the upper
+    // left. With the screen colors showing it turns see-through so the
+    // screen's box inside shows.
+    const LIGHT = [-0.45, 0.65, 0.62];
+    const sideFront = new Set(), capFront = new Set();
+    const shown = [];
+    for (const q of SOLID) {
+      if (!facing(q)) continue;
+      if (q.side !== undefined) sideFront.add(q.side);
+      else if (q.outer) capFront.add(q.cap);
+      const n = view(q.normal);
+      const shade = 0.6 + 0.45 * Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+      const pts = q.pts.map(project);
+      shown.push({pts, depth: pts.reduce((d, p) => d + p[2], 0) / 4,
+        color: `rgb(${q.rgb.map(c => Math.round(Math.min(255, c * shade))).join(',')})`});
+    }
+    shown.sort((a, b) => a.depth - b.depth);
+    ctx.globalAlpha = showScreen ? 0.4 : 1;
+    ctx.lineJoin = 'round';
+    for (const q of shown) {
+      ctx.fillStyle = q.color;
+      ctx.strokeStyle = q.color; // covers the hairline gaps between quads
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.moveTo(o[0], o[1]);
-      ctx.lineTo(a.p[0], a.p[1]);
-      ctx.lineTo(b.p[0], b.p[1]);
+      ctx.moveTo(q.pts[0][0], q.pts[0][1]);
+      for (let j = 1; j < 4; j++) ctx.lineTo(q.pts[j][0], q.pts[j][1]);
       ctx.closePath();
       ctx.fill();
-    }
-
-    // where the solid meets the walls
-    ctx.lineWidth = 2;
-    edge.forEach((e, i) => {
-      const n = edge[(i + 1) % edge.length];
-      ctx.globalAlpha = fade((e.p[2] + n.p[2]) / 2) * 0.8;
-      ctx.strokeStyle = `rgb(${e.rgb.join(',')})`;
-      ctx.beginPath();
-      ctx.moveTo(e.p[0], e.p[1]);
-      ctx.lineTo(n.p[0], n.p[1]);
       ctx.stroke();
-    });
+    }
     ctx.globalAlpha = 1;
-
-    // axes from black along each cone, labeled at the far end
-    const axes = [
-      {to: [1, 0, 0], label: 'L cone', color: L_COLOR},
-      {to: [0, 1, 0], label: 'M cone', color: M_COLOR},
-      {to: [0, 0, 1], label: 'S cone', color: S_COLOR},
-    ];
-    ctx.lineWidth = 2.5;
-    for (const ax of axes) {
-      const p = project(ax.to);
-      ctx.strokeStyle = ax.color;
-      ctx.beginPath();
-      ctx.moveTo(o[0], o[1]);
-      ctx.lineTo(p[0], p[1]);
-      ctx.stroke();
-    }
 
     if (showScreen) drawScreen();
 
-    // the spectral locus: one dot per wavelength, joined into the curve
+    // the rim where the solid meets the walls
+    const edge = EDGE.map(e => project(e.lms));
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    edge.forEach((p, i) => {
+      if (!sideFront.has(i) && !capFront.has(i)) return;
+      const q = edge[(i + 1) % edge.length];
+      ctx.moveTo(p[0], p[1]);
+      ctx.lineTo(q[0], q[1]);
+    });
+    ctx.stroke();
+
+    drawEdges(true);
+
+    // the spectral locus, which runs along the side of the solid: a dark
+    // line with a dot every 10nm, only where that side faces you
     const locus = LOCUS.map(pt => ({...pt, p: project(pt.lms)}));
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(20,20,20,0.85)';
+    ctx.lineWidth = 2;
     ctx.lineCap = 'round';
+    ctx.beginPath();
     for (let i = 0; i < locus.length - 1; i++) {
-      const a = locus[i], b = locus[i + 1];
-      ctx.globalAlpha = fade((a.p[2] + b.p[2]) / 2);
-      ctx.strokeStyle = `rgb(${a.rgb.join(',')})`;
-      ctx.beginPath();
-      ctx.moveTo(a.p[0], a.p[1]);
-      ctx.lineTo(b.p[0], b.p[1]);
-      ctx.stroke();
+      if (!sideFront.has(i)) continue;
+      ctx.moveTo(locus[i].p[0], locus[i].p[1]);
+      ctx.lineTo(locus[i + 1].p[0], locus[i + 1].p[1]);
     }
+    ctx.stroke();
     const dotR = Math.max(2.5, side() / 130);
-    locus.filter(pt => pt.nm % 10 === 0).sort((a, b) => a.p[2] - b.p[2]).forEach(pt => {
-      ctx.globalAlpha = fade(pt.p[2]);
+    const dotShown = (i) => sideFront.has(i) || sideFront.has(i - 1);
+    locus.forEach((pt, i) => {
+      if (pt.nm % 10 !== 0 || !dotShown(i)) return;
       ctx.fillStyle = `rgb(${pt.rgb.join(',')})`;
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(pt.p[0], pt.p[1], dotR, 0, 2 * Math.PI);
       ctx.fill();
       ctx.stroke();
     });
-    ctx.globalAlpha = 1;
+
+    const axes = [
+      {to: [1, 0, 0], label: 'L cone', color: L_COLOR},
+      {to: [0, 1, 0], label: 'M cone', color: M_COLOR},
+      {to: [0, 0, 1], label: 'S cone', color: S_COLOR},
+    ];
 
     // labels last, so nothing covers them
     ctx.lineJoin = 'round';
@@ -400,7 +470,9 @@ function makePlot(container, interval) {
       ctx.fillText(txt, x, y);
     };
     for (const nm of [450, 500, 550, 600]) {
-      const pt = locus.find(q => q.nm === nm);
+      const i = locus.findIndex(q => q.nm === nm);
+      if (!dotShown(i)) continue;
+      const pt = locus[i];
       // beside the dot, on the side away from the middle, so it stays clear
       // of the axis labels at the top and bottom
       const side = pt.p[0] < width / 2 ? -1 : 1;
@@ -450,15 +522,9 @@ function makePlot(container, interval) {
     ctx.fillText('screen white', w[0] + r + 4, w[1]);
   }
 
-  // spin slowly about the S axis until someone grabs it (clearSandbox stops
-  // this when the slide changes)
-  interval.id = setInterval(() => {
-    if (spinning) {
-      rot = matMul(rot, rotY(0.006));
-      dirty = true;
-    }
-    draw();
-  }, 16);
+  // redraws after a drag or zoom (clearSandbox stops this when the slide
+  // changes)
+  interval.id = setInterval(draw, 16);
   // redraw once the handwritten font is in, for the labels
   if (document.fonts) document.fonts.load('bold 16px Gaegu').then(() => { dirty = true; }, () => {});
 

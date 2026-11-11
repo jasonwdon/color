@@ -41,9 +41,9 @@ const slides = [
   { name: 'ryb',             desktop: RYBDesktop,             mobile: RYBMobile },
   { name: 'electromagnetic', desktop: ElectromagneticDesktop, mobile: ElectromagneticMobile },
   { name: 'cones',           desktop: ConesDesktop,           mobile: ConesMobile },
-  { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile },
   { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile },
   { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile },
+  { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile },
 ];
 ```
 
@@ -202,7 +202,12 @@ for (let px = 0; px <= w; px++) {
 
 ## Cone Space Slide (`coneSpace.js`)
 
-A 3D plot of color with one axis per cone (L right, S up, M in depth), drawn on its own canvas with plain 2D canvas math (no 3D library). It uses real Stockman & Sharpe 2° cone fundamentals at 5nm, each cone scaled to peak 1. It shows the spectral locus (equal energy of each wavelength), the solid of real colors as a fan of translucent triangles from black out to where each ray meets the walls of the box (closed by the purples), and a toggle for the screen's RGB gamut as a dashed parallelepiped. Drag turns it freely, wheel or pinch zooms, and it spins slowly until first touched. Its canvas has `touch-action: none` so dragging never scrolls or refreshes the page. `revealAfterFonts(el)` in `utils.js` fades the plot in once Gaegu has loaded.
+The last slide: a 3D plot of color with one axis per cone (L right, S up, M in depth), drawn on its own canvas with plain 2D canvas math (no 3D library). It uses real Stockman & Sharpe 2° cone fundamentals at 5nm, each cone scaled to peak 1.
+
+- The solid of real colors is an opaque, lit mesh (`SOLID`): side bands from black out to where each ray meets the walls of the box (closed by the purples), plus a cap on the walls from white out to the edge colors. It's convex, so only quads facing the camera are drawn (no depth buffer needed). Box edges and axes are drawn behind or in front of it depending on whether a box face beside them faces the camera.
+- The spectral locus (equal energy of each wavelength) lies on the solid's side, so it's drawn as a dark line with colored dots only where that side faces you.
+- A toggle shows the screen's RGB gamut as a dashed parallelepiped and makes the solid see-through.
+- Orbit controls: horizontal drag spins around the S axis, vertical drag tilts, clamped short of straight above or below. Wheel or pinch zooms. No auto rotation. The canvas has `touch-action: none` so dragging never scrolls or refreshes the page. `revealAfterFonts(el)` in `utils.js` fades the plot in once Gaegu has loaded.
 
 ---
 

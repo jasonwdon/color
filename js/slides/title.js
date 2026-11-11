@@ -1,4 +1,4 @@
-import {TextBox} from '../components.js?v=41';
+import {TextBox} from '../components.js?v=42';
 
 // links back to the portfolio page
 const BYLINE = "<a class=\"byline\" href=\"https://jasonwdon.github.io/\">by Jason</a>";
