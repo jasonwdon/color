@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=37';
-import {onResize, mobileContentBottom} from '../utils.js?v=37';
+import {TextBox} from '../components.js?v=38';
+import {onResize, mobileContentBottom} from '../utils.js?v=38';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -359,15 +359,23 @@ const CMY = letters(['cyan', 'C'], ['magenta', 'M'], ['yellow', 'Y']);
 const RGB = letters(['red', 'R'], ['green', 'G'], ['blue', 'B']);
 const WHITE = "<b style='color:white; background-color:black; padding: 0 4px; border-radius: 3px;'>white</b>";
 
+// a phrase that opens a note when tapped, inside a sentence
+const term = (text, note) =>
+  `<span class='note-anchor'><button type='button' class='note-link inline-term' aria-expanded='false'>${text}</button>` +
+  `<span class='note-popup' hidden>${note}</span></span>`;
+
+const PRIMARIES_NOTE =
+  '"Primary colors" are actually made up. ' +
+  "No three base light sources can trigger every combination of cone responses because each of our cones " +
+  `reacts to an overlapping range of frequencies. ${RGB} just happens to cover the widest area of our visual range ` +
+  "with only three lights.";
+
 // same text on phones and desktop
 const LIGHT_TEXT =
   "Ah, our first conundrum. Let's clear it up.<br><br>" +
-  `<b>The true <span class='note-anchor'><button type='button' class='note-link inline-term' aria-expanded='false'>` +
-  `primary colors</button><span class='note-popup' hidden>"Primary colors" are actually made up. ` +
-  "No three base light sources can trigger every combination of cone responses because each of our cones " +
-  `reacts to an overlapping range of frequencies. ${RGB} just happens to cover the widest area of our visual range ` +
-  `with only three lights.</span></span> of human vision are ${RED}, ${GREEN} and ${BLUE}</b>. ` +
-  "They're the three axes our brain uses to read color.<br><br>" +
+  `<b>The primary colors of human vision are ${RED}, ${GREEN}, and ${BLUE}</b> (${term('sort of', PRIMARIES_NOTE)}). ` +
+  `These 3 colors stimulate each distinct cone (again ${term('sort of', 'See the previous "sort of"')}), ` +
+  "and that combination of signals forms our perception of color.<br><br>" +
   `With no light at all, we see ${BLACK}. Turn the lights on and we get our different colors.`;
 
 const PAINT_TEXT =
@@ -453,18 +461,22 @@ export function PaintMixingMobile() {
 // .note-popup, and a tap anywhere else closes it. The popup floats, so
 // nothing moves, and it shifts left if it would run off the slide.
 function setupNote(el) {
-  const star = el.querySelector('.note-link');
-  const note = el.querySelector('.note-popup');
   // the text box fades in, which makes it its own layer, so lift the whole
   // box above BACK/NEXT for the popup to show over them
   el.style.zIndex = '5';
-  const setOpen = (open) => {
+  const pairs = Array.from(el.querySelectorAll('.note-link'))
+    .map(link => ({link, note: link.nextElementSibling}));
+  const setOpen = ({link, note}, open) => {
     note.hidden = !open;
-    star.setAttribute('aria-expanded', String(open));
+    link.setAttribute('aria-expanded', String(open));
     if (!open) return;
-    // as wide as reads well, but never wider than the screen
+    // only one note open at a time
+    pairs.forEach(p => { if (p.note !== note && !p.note.hidden) setOpen(p, false); });
+    // as wide as its text, up to what reads well, never wider than the screen
     const sandbox = document.getElementById('sandbox').getBoundingClientRect();
-    note.style.width = Math.min(340, sandbox.width - 24) + 'px';
+    const maxW = Math.min(340, sandbox.width - 24);
+    note.style.width = 'max-content';
+    note.style.width = Math.min(maxW, note.offsetWidth) + 'px';
     // centered on the slide (left is measured from the element that
     // positions the popup)
     note.style.top = '';
@@ -475,10 +487,12 @@ function setupNote(el) {
     const box = note.getBoundingClientRect();
     if (box.bottom > sandbox.bottom - 8) note.style.top = `${-note.offsetHeight - 4}px`;
   };
-  star.addEventListener('click', () => setOpen(note.hidden));
+  pairs.forEach(p => p.link.addEventListener('click', () => setOpen(p, p.note.hidden)));
   const closeOutside = (e) => {
     if (!el.isConnected) return document.removeEventListener('pointerdown', closeOutside);
-    if (!note.hidden && !star.contains(e.target) && !note.contains(e.target)) setOpen(false);
+    pairs.forEach(p => {
+      if (!p.note.hidden && !p.link.contains(e.target) && !p.note.contains(e.target)) setOpen(p, false);
+    });
   };
   document.addEventListener('pointerdown', closeOutside);
 }
