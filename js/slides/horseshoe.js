@@ -124,11 +124,11 @@ function blendAff(m0, m1, t) {
 
 const ease = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 const span = (t, a, b) => ease((t - a) / (b - a));
-// the camera turns part way while the slice sweeps out, so the slice opens
-// up instead of being seen edge on, then the rest of the way as the 3D fades
+// the camera swings round (still from above) while the slice sweeps out, so
+// the slice opens up instead of being seen edge on, then tips down to face
+// it as the 3D fades
 const T = {raysIn: [0.3, 0.9], sweep: [0.9, 3.0], turn1: [0.9, 3.0], turn2: [3.5, 4.9], fade: [3.5, 4.4],
   flat: [4.9, 6.3], chart: [5.9, 6.7], end: 6.7};
-const TURN1 = 0.55;
 
 const TEXT = [
   "Every line out from black is one color getting brighter.",
@@ -196,6 +196,8 @@ function startHorseshoe(container, interval, phone, text) {
   let toYaw = FACE.yaw;
   while (toYaw - from.yaw > Math.PI) toYaw -= 2 * Math.PI;
   while (toYaw - from.yaw < -Math.PI) toYaw += 2 * Math.PI;
+  // part way round, still looking from above, where the slice shows well
+  const mid = {yaw: toYaw - 0.29, pitch: Math.min(0.6, Math.max(0.25, from.pitch))};
 
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let start = null;
@@ -220,8 +222,9 @@ function startHorseshoe(container, interval, phone, text) {
     if (start === null) start = now;
     t = now - start;
     paras.forEach((p, i) => { p.style.opacity = t >= PARA_AT[i] ? '1' : '0'; });
-    const turn = TURN1 * span(t, ...T.turn1) + (1 - TURN1) * span(t, ...T.turn2);
-    plot.setView(from.yaw + (toYaw - from.yaw) * turn, from.pitch + (FACE.pitch - from.pitch) * turn);
+    const a = span(t, ...T.turn1), b = span(t, ...T.turn2);
+    const y1 = from.yaw + (mid.yaw - from.yaw) * a, p1 = from.pitch + (mid.pitch - from.pitch) * a;
+    plot.setView(y1 + (toYaw - y1) * b, p1 + (FACE.pitch - p1) * b);
     plot.setSceneAlpha(1 - span(t, ...T.fade));
     plot.redraw();
     if (t >= T.end) {
