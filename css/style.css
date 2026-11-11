@@ -247,6 +247,8 @@ wired-button:hover {
   font-family: Gaegu, cursive;
   font-size: 18px;
   font-weight: normal;
+  /* a note inside bold text would otherwise inherit the bold outline */
+  text-shadow: none;
   line-height: 1.25;
   text-align: left;
   color: #222;

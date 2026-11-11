@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=36';
-import {clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=36';
+import {TextBox} from '../components.js?v=37';
+import {clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=37';
 
 export function RYBDesktop(rc) {
   let left = 50;
@@ -26,14 +26,15 @@ export function RYBMobile(rc, ctx) {
   const text = TextBox({text:
     "In elementary school, we learn that there are 3 primary colors: <b style='color:red'>Red</b>, <b style='color:yellow'>Yellow</b>, <b style='color:blue'>Blue</b>.<br><br>" +
     "We can mix them to get our secondary colors, mix all of them to get <b>black</b>/<b style='color:saddlebrown'>brown</b>, and the paper was <b style='color:white; background-color:black; padding: 0 4px; border-radius: 3px;'>white</b> to begin with.<br><br>" +
-    "It was good enough for second grade.", x: 15, y: 30, w: W - 30, size: '24px', align: 'left'});
+    "It was good enough for second grade.", x: 15, y: 20, w: W - 30, size: '22px', align: 'left'});
 
   // The circles go in the space between the end of the text and the buttons,
   // shrinking if that space is short, so they never cover the text.
-  let fontSize = 24;
+  let fontSize = 22;
   onResize([text], () => {
     const top = text.offsetTop + text.offsetHeight + 10;
-    const bottom = mobileContentBottom();
+    // keep some air above the BACK/NEXT buttons
+    const bottom = mobileContentBottom() - 24;
     const clusterH = 210; // from the top of the red circle to the bottom of blue and yellow
     if (bottom - top < clusterH * 0.7 && fontSize > 18) {
       fontSize -= 1;
@@ -42,7 +43,11 @@ export function RYBMobile(rc, ctx) {
     }
     const scale = Math.min(1, (bottom - top) / clusterH);
     const cx = ctx.canvas.width / 2;
-    const cy = (top + bottom) / 2 - ctx.canvas.offsetTop + 20 * scale; // black circle sits below the middle
+    // the cluster sits a little above the middle of the space it has: a third
+    // of the spare room goes above it and two thirds below. The red circle's
+    // top is 122 above the black circle's center.
+    const spare = Math.max(0, bottom - top - clusterH * scale);
+    const cy = top + spare / 3 + 124 * scale - ctx.canvas.offsetTop;
     clearCanvas(ctx);
     drawMobileCircles(rc, cx, cy, scale);
   });
