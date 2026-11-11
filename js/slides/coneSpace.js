@@ -401,11 +401,11 @@ function makePlot(container, interval) {
     };
     for (const nm of [450, 500, 550, 600]) {
       const pt = locus.find(q => q.nm === nm);
-      // nudge the label away from the middle of the box
-      const dx = pt.p[0] - width / 2, dy = pt.p[1] - height / 2;
-      const len = Math.hypot(dx, dy) || 1;
-      label(nm + 'nm', pt.p[0] + dx / len * fontPx * 1.6, pt.p[1] + dy / len * fontPx * 0.9,
-        '#555', Math.round(fontPx * 0.8));
+      // beside the dot, on the side away from the middle, so it stays clear
+      // of the axis labels at the top and bottom
+      const side = pt.p[0] < width / 2 ? -1 : 1;
+      label(nm + 'nm', pt.p[0] + side * (dotR + 3), pt.p[1], '#555', Math.round(fontPx * 0.8),
+        side < 0 ? 'right' : 'left');
     }
     for (const ax of axes) {
       const p = project(ax.to.map(c => c * 1.13));
