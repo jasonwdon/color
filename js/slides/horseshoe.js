@@ -215,7 +215,6 @@ function startHorseshoe(container, interval, phone, text) {
     if (reduced) start = now - T.end;
     if (start === null) start = now;
     t = now - start;
-    const DBG = new URLSearchParams(location.search).get('hst'); if (DBG) t = parseFloat(DBG); // DEBUG-REMOVE
     paras.forEach((p, i) => { p.style.opacity = t >= PARA_AT[i] ? '1' : '0'; });
     const a = span(t, ...T.turn1), b = span(t, ...T.turn2);
     const y1 = from.yaw + (mid.yaw - from.yaw) * a, p1 = from.pitch + (mid.pitch - from.pitch) * a;
@@ -236,7 +235,7 @@ function startHorseshoe(container, interval, phone, text) {
     const dotR = Math.max(2.5, plot.side() / 130);
 
     // where the chart ends up
-    const ml = fontPx * 1.3, mb = fontPx * 2.4, mt = fontPx * 0.6, mr = fontPx * 0.6;
+    const ml = fontPx * 1.3, mb = fontPx * 1.5 + 26, mt = fontPx * 0.6, mr = fontPx * 0.6;
     const s = Math.min((W - ml - mr) / CHART_X, (H - mt - mb) / CHART_Y);
     const ox = ml + (W - ml - mr - CHART_X * s) / 2, oy = H - mb - (H - mt - mb - CHART_Y * s) / 2;
     const chartAff = [s, 0, 0, -s, ox, oy];

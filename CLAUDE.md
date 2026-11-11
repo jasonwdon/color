@@ -44,6 +44,7 @@ const slides = [
   { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile },
   { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile },
   { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile },
+  { name: 'horseshoe',       desktop: HorseshoeDesktop,       mobile: HorseshoeMobile },
 ];
 ```
 
@@ -202,12 +203,21 @@ for (let px = 0; px <= w; px++) {
 
 ## Cone Space Slide (`coneSpace.js`)
 
-The last slide: a 3D plot of color with one axis per cone (L right, S up, M in depth), drawn on its own canvas with plain 2D canvas math (no 3D library). It uses real Stockman & Sharpe 2° cone fundamentals at 5nm, each cone scaled to peak 1.
+The second to last slide: a 3D plot of color with one axis per cone (L right, S up, M in depth), drawn on its own canvas with plain 2D canvas math (no 3D library). It uses real Stockman & Sharpe 2° cone fundamentals at 5nm, each cone scaled to peak 1.
 
 - The solid of real colors is a lit mesh (`SOLID`), drawn on its own layer and laid over the plot see-through: side bands from black out to where each ray meets the walls of the box (closed by the purples), plus a cap on the walls from white out to the edge colors. It's convex, so only quads facing the camera are drawn (no depth buffer needed). Box edges and axes are drawn over it.
 - The spectral locus (equal energy of each wavelength) lies on the solid's side, so it's drawn as a dark line with colored dots only where that side faces you.
 - A list beside the plot (under it on phones) of common screen standards (`SCREENS`: sRGB, Adobe RGB, Display P3, Rec. 2020), all off at first. Each checked one shows its gamut as a dashed parallelepiped in its own line color and dash, sharing D65 white, as bright as the box allows, so they compare. Each lists what share of the drawn solid it fills by volume (sRGB about 10%, Rec. 2020 about 20%). These match what the plot shows; the usual flat-chart figures (u'v' area, sRGB about 38%) ignore brightness and confused readers.
+- Straight lines from black (`BRIGHT_RAYS`, a few spectral colors, a purple and white) show one color at every brightness, fading in from black.
 - Orbit controls: horizontal drag spins around the S axis, vertical drag tilts, clamped short of straight above or below. Wheel or pinch zooms. No auto rotation. The canvas has `touch-action: none` so dragging never scrolls or refreshes the page. `revealAfterFonts(el)` in `utils.js` fades the plot in once Gaegu has loaded.
+
+- `lastView` remembers where the plot was left, and `makePlot(container, interval, phone, opts)` takes `still`, `view`, `tick` and `overlay` so the next slide can drive the same plot.
+
+---
+
+## Horseshoe Slide (`horseshoe.js`)
+
+The last slide turns the cone space into the CIE xy chromaticity diagram. It opens on the cone space plot exactly as it was left (same row layout, `lastView`, the screens list kept but hidden on desktop), then plays a ~6.5s animation (timings in `T`): a flat slice (the plane X+Y+Z = constant, through CIE 2012 XYZ) sweeps out from black while the camera swings round from above, the 3D plot fades as the camera turns to face the slice from the black side, then the slice is blended flat into the chart (`fitAff`/`blendAff`: turn, stretch and shift each part of the way, with perspective fading out). The slice is drawn by clipping a prerendered xy color image to the outline and mapping it with the best-fit affine, so the same code draws it in 3D and flat. The text's paragraphs fade in with the steps. Clicking or tapping the chart plays it again; reduced motion jumps to the end.
 
 ---
 
