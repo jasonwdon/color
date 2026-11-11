@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=44';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=44';
+import {TextBox} from '../components.js?v=45';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=45';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -30,11 +30,19 @@ const CONE_DATA = [
   [690,0.0122,0.0008,0], [695,0.0085,0.0005,0], [700,0.0059,0.0004,0],
 ];
 
-// what a screen's red, green and blue light each do to the cones
-const SCREEN_PRIMARIES = [
-  {lms: [0.26794, 0.07987, 0.00999], color: 'rgb(255,0,0)'},
-  {lms: [0.68209, 0.70216, 0.0616],  color: 'rgb(0,200,0)'},
-  {lms: [0.06199, 0.08443, 0.49115], color: 'rgb(0,0,255)'},
+// Common kinds of screen, by what their red, green and blue light each do to
+// the cones (from each standard's primaries and D65 white, through CIE 2012
+// XYZ). share is roughly how much of the colors we can see each one covers:
+// its triangle's share of the spectral locus's area in CIE 1976 u'v'.
+const SCREENS = [
+  {name: 'sRGB', note: 'most screens', share: 38, line: '#222', dash: [6, 4],
+    primaries: [[0.2679, 0.07985, 0.00999], [0.68211, 0.70217, 0.0616], [0.062, 0.08445, 0.49127]]},
+  {name: 'Adobe RGB', note: 'photo editing', share: 44, line: '#6a3fc9', dash: [2, 3],
+    primaries: [[0.37462, 0.11166, 0.01397], [0.57272, 0.66674, 0.03653], [0.06466, 0.08808, 0.51236]]},
+  {name: 'Display P3', note: 'newer phones', share: 47, line: '#c2410c', dash: [10, 4],
+    primaries: [[0.29826, 0.06663, 0], [0.64566, 0.7071, 0.02332], [0.0681, 0.09275, 0.53955]]},
+  {name: 'Rec. 2020', note: 'future TVs', share: 65, line: '#0b7285', dash: [8, 3, 2, 3],
+    primaries: [[0.35876, 0.04361, 0], [0.60909, 0.74007, 0.01451], [0.04415, 0.0828, 0.54835]]},
 ];
 
 // cone colors from the cones slide
@@ -75,22 +83,22 @@ const EDGE = (() => {
   return edge;
 })();
 
-// the colors a screen can make: every mix of its red, green and blue, scaled
-// so that white sits inside the box
-const SCREEN = (() => {
-  const white = [0, 1, 2].map(i => SCREEN_PRIMARIES.reduce((s, p) => s + p.lms[i], 0));
+// The colors each screen can make: every mix of its red, green and blue, a
+// slanted box. All share the same white, scaled to sit inside the box, so
+// the boxes can be compared.
+const GAMUT_EDGES = [];
+for (let a = 0; a < 8; a++) for (const bit of [1, 2, 4]) if (!(a & bit)) GAMUT_EDGES.push([a, a | bit]);
+(() => {
+  const white = [0, 1, 2].map(i => SCREENS[0].primaries.reduce((s, p) => s + p[i], 0));
   const k = 0.85 / maxOf(white);
-  const corner = (r, g, b) => [0, 1, 2].map(i =>
-    k * (r * SCREEN_PRIMARIES[0].lms[i] + g * SCREEN_PRIMARIES[1].lms[i] + b * SCREEN_PRIMARIES[2].lms[i]));
-  const corners = [];
-  for (let n = 0; n < 8; n++) {
-    const r = n & 1, g = (n >> 1) & 1, b = (n >> 2) & 1;
-    corners.push({lms: corner(r, g, b), color: `rgb(${255 * r},${255 * g},${255 * b})`});
+  for (const scr of SCREENS) {
+    scr.corners = [];
+    for (let n = 0; n < 8; n++) {
+      const mix = [n & 1, (n >> 1) & 1, (n >> 2) & 1];
+      scr.corners.push({lms: [0, 1, 2].map(i => k * mix.reduce((s, on, j) => s + on * scr.primaries[j][i], 0)),
+        color: `rgb(${mix.map(on => 255 * on).join(',')})`});
+    }
   }
-  // edges join corners that differ in one primary
-  const edges = [];
-  for (let a = 0; a < 8; a++) for (const bit of [1, 2, 4]) if (!(a & bit)) edges.push([a, a | bit]);
-  return {corners, edges};
 })();
 
 // cone space (L, M, S) to world (x right, y up, z out of the screen), with
@@ -166,14 +174,14 @@ function rotY(a) {
 export function ConeSpaceDesktop(rc, ctx, interval) {
   TextBox({text: TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
 
-  // the plot gets the right side to itself, above BACK/NEXT
-  const col = document.createElement('div');
-  col.style.cssText = 'position:absolute;left:470px;width:500px;top:50px;height:440px;' +
-    'display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;';
-  document.getElementById('sandbox').appendChild(col);
-  const plot = makePlot(col, interval);
-  plot.setSize(490, 410);
-  revealAfterFonts(col);
+  // the plot and the list of screens share the right side, above BACK/NEXT
+  const row = document.createElement('div');
+  row.style.cssText = 'position:absolute;left:455px;width:540px;top:50px;height:440px;' +
+    'display:flex;flex-direction:row;justify-content:center;align-items:center;gap:6px;';
+  document.getElementById('sandbox').appendChild(row);
+  const plot = makePlot(row, interval, false);
+  plot.setSize(390, 420);
+  revealAfterFonts(row);
 }
 
 export function ConeSpaceMobile(rc, ctx, interval) {
@@ -186,15 +194,15 @@ export function ConeSpaceMobile(rc, ctx, interval) {
   const col = document.createElement('div');
   col.style.cssText = 'position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:2px;';
   sandbox.appendChild(col);
-  const plot = makePlot(col, interval);
+  const plot = makePlot(col, interval, true);
   revealAfterFonts(col);
 
-  // the plot is a square that fills the room left between the text and the
-  // buttons; on a short screen the text shrinks a little first
-  onResize([text], () => {
+  // the plot fills the room left between the text and the list of screens
+  // under it; on a short screen the text shrinks a little first
+  onResize([text, plot.list], () => {
     const top = text.offsetTop + text.offsetHeight + 6;
     const room = mobileContentBottom() - top;
-    const toggleH = plot.legend.offsetHeight + 2;
+    const toggleH = plot.list.offsetHeight + 2;
     const side = Math.floor(Math.min(W, room - toggleH, 440));
     if (side < 240 && fontSize > 15) {
       fontSize -= 1;
@@ -207,8 +215,9 @@ export function ConeSpaceMobile(rc, ctx, interval) {
 }
 
 // The 3D plot: a canvas you can drag to turn (and scroll or pinch to zoom),
-// with a note under it on the dashed box of colors a screen can make.
-function makePlot(container, interval) {
+// with a list of kinds of screen beside it (under it on phones), each
+// showing the colors it can make as a dashed box inside the shape.
+function makePlot(container, interval, phone) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:relative;';
   container.appendChild(wrap);
@@ -229,11 +238,49 @@ function makePlot(container, interval) {
     'font-family:Gaegu,cursive;font-size:18px;font-weight:bold;color:#777;';
   wrap.appendChild(hint);
 
-  // a note under the plot on what the dashed box inside it is
-  const legend = document.createElement('div');
-  legend.textContent = 'dashed box: the colors a screen can make';
-  legend.style.cssText = 'padding:2px 4px;color:#777;font-family:Gaegu,cursive;font-size:18px;';
-  container.appendChild(legend);
+  // the list of screens, all off to start
+  const picked = new Set();
+  const list = document.createElement('div');
+  list.style.cssText = 'font-family:Gaegu,cursive;color:#333;' + (phone
+    ? 'display:flex;flex-wrap:wrap;justify-content:center;gap:0 12px;font-size:17px;padding:0 6px;'
+    : 'display:flex;flex-direction:column;gap:8px;width:140px;font-size:19px;');
+  if (!phone) {
+    const head = document.createElement('div');
+    head.innerHTML = '<b style="text-shadow:none">Screens</b><br>' +
+      '<span style="font-size:15px;color:#777">what each can show, and roughly how much of what you can see</span>';
+    head.style.lineHeight = '1.1';
+    list.appendChild(head);
+  }
+  for (const scr of SCREENS) {
+    const item = document.createElement('label');
+    item.style.cssText = 'display:flex;align-items:center;gap:4px;cursor:pointer;line-height:1.05;' +
+      'touch-action:manipulation;-webkit-user-select:none;user-select:none;';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.style.cssText = `margin:0;width:16px;height:16px;flex:none;accent-color:${scr.line};cursor:pointer;`;
+    box.addEventListener('change', () => {
+      box.checked ? picked.add(scr) : picked.delete(scr);
+      dirty = true;
+    });
+    // a short stretch of the screen's dashed line, so the list doubles as a key
+    const dash = scr.dash.join(' ');
+    const swatch = `<svg width="18" height="6" style="flex:none"><line x1="0" y1="3" x2="18" y2="3" ` +
+      `stroke="${scr.line}" stroke-width="2" stroke-dasharray="${dash}"/></svg>`;
+    const words = phone
+      ? `<span>${scr.name} <span style="color:#777">${scr.share}%</span></span>`
+      : `<span>${scr.name} <span style="color:#777">${scr.share}%</span><br>` +
+        `<span style="font-size:15px;color:#777">${scr.note}</span></span>`;
+    item.appendChild(box);
+    item.insertAdjacentHTML('beforeend', swatch + words);
+    list.appendChild(item);
+  }
+  if (phone) {
+    const note = document.createElement('div');
+    note.textContent = 'screens: what each can show, and roughly what share of the colors you can see';
+    note.style.cssText = 'flex-basis:100%;text-align:center;font-size:14px;color:#777;line-height:1.1;';
+    list.prepend(note);
+  }
+  container.appendChild(list);
 
   let width = 300, height = 300;
   const side = () => Math.min(width, height);
@@ -242,7 +289,7 @@ function makePlot(container, interval) {
   // up and down tilts it toward or away from you, never past straight
   // above or below, so it can't end up upside down. Starts turned so all
   // three axes show, looking at the side with the rainbow curve on it.
-  let yaw = 0.45, pitch = 0.38;
+  let yaw = 0.2, pitch = 0.38;
   const MAX_PITCH = Math.PI / 2 - 0.05;
   let rot = matMul(rotX(pitch), rotY(yaw));
   let zoom = 1;
@@ -394,12 +441,12 @@ function makePlot(container, interval) {
       lctx.fill();
       lctx.stroke();
     }
-    // see-through, so the screen's colors show inside
+    // see-through, so the screens' colors show inside
     ctx.globalAlpha = 0.45;
     ctx.drawImage(layer, 0, 0, width, height);
     ctx.globalAlpha = 1;
 
-    drawScreen();
+    for (const scr of SCREENS) if (picked.has(scr)) drawScreen(scr);
 
     // the rim where the solid meets the walls
     const edge = EDGE.map(e => project(e.lms));
@@ -478,39 +525,31 @@ function makePlot(container, interval) {
     ctx.textBaseline = 'alphabetic';
   }
 
-  // the screen's colors: a slanted box spanned by its red, green and blue
-  function drawScreen() {
-    const pts = SCREEN.corners.map(c => ({...c, p: project(c.lms)}));
+  // a screen's colors: a slanted box spanned by its red, green and blue,
+  // with a dot of each mix at its corners
+  function drawScreen(scr) {
+    const pts = scr.corners.map(c => ({...c, p: project(c.lms)}));
     ctx.save();
-    ctx.setLineDash([5, 4]);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(40,40,40,0.75)';
+    ctx.setLineDash(scr.dash);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = scr.line;
     ctx.beginPath();
-    for (const [a, b] of SCREEN.edges) {
+    for (const [a, b] of GAMUT_EDGES) {
       ctx.moveTo(pts[a].p[0], pts[a].p[1]);
       ctx.lineTo(pts[b].p[0], pts[b].p[1]);
     }
     ctx.stroke();
     ctx.restore();
-    const r = Math.max(3, side() / 100);
+    const r = Math.max(2.5, side() / 120);
     pts.slice(1).forEach(pt => {
       ctx.fillStyle = pt.color;
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = scr.line;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.arc(pt.p[0], pt.p[1], r, 0, 2 * Math.PI);
       ctx.fill();
       ctx.stroke();
     });
-    const w = pts[7].p;
-    ctx.font = `bold ${Math.max(13, Math.round(side() / 26))}px Gaegu`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.strokeText('screen white', w[0] + r + 4, w[1]);
-    ctx.fillStyle = '#333';
-    ctx.fillText('screen white', w[0] + r + 4, w[1]);
   }
 
   // redraws after a drag or zoom (clearSandbox stops this when the slide
@@ -519,5 +558,5 @@ function makePlot(container, interval) {
   // redraw once the handwritten font is in, for the labels
   if (document.fonts) document.fonts.load('bold 16px Gaegu').then(() => { dirty = true; }, () => {});
 
-  return {setSize, legend};
+  return {setSize, list};
 }
