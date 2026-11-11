@@ -244,8 +244,8 @@ function makePlot(container, interval) {
   // Turns like a globe on a stand: side to side spins it around the S axis,
   // up and down tilts it toward or away from you, never past straight
   // above or below, so it can't end up upside down. Starts turned so all
-  // three axes show.
-  let yaw = -0.7, pitch = 0.42;
+  // three axes show, looking at the side with the rainbow curve on it.
+  let yaw = 0.45, pitch = 0.38;
   const MAX_PITCH = Math.PI / 2 - 0.05;
   let rot = matMul(rotX(pitch), rotY(yaw));
   let zoom = 1;
@@ -479,10 +479,14 @@ function makePlot(container, interval) {
       label(nm + 'nm', pt.p[0] + side * (dotR + 3), pt.p[1], '#555', Math.round(fontPx * 0.8),
         side < 0 ? 'right' : 'left');
     }
-    for (const ax of axes) {
+    // an axis hidden behind the solid gets a fainter label
+    axes.forEach((ax, i) => {
       const p = project(ax.to.map(c => c * 1.13));
+      const e = boxEdges.find(b => b.axis === i);
+      ctx.globalAlpha = e.front ? 1 : 0.5;
       label(ax.label, p[0], p[1], ax.color, fontPx);
-    }
+    });
+    ctx.globalAlpha = 1;
     label('black', o[0], o[1] + fontPx * 0.9, '#333', Math.round(fontPx * 0.85));
     ctx.textBaseline = 'alphabetic';
   }
