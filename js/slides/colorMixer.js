@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=47';
-import {onResize, mobileContentBottom} from '../utils.js?v=47';
+import {TextBox} from '../components.js?v=48';
+import {onResize, mobileContentBottom} from '../utils.js?v=48';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -106,7 +106,8 @@ function makePanel(container, {colors, mode, canvasW, canvasH, brushSize, fontSi
   const canvas = document.createElement('canvas');
   canvas.width  = canvasW;
   canvas.height = canvasH;
-  canvas.style.cssText = `border:2px solid #aaa;border-radius:4px;background:${bgColor};display:block;cursor:crosshair;touch-action:none;`;
+  canvas.style.cssText = `border:2px solid #aaa;border-radius:4px;background:${bgColor};display:block;touch-action:none;`;
+  canvas.className = 'draw-canvas'; // the pencil cursor
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, canvasW, canvasH);

@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=47';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=47';
+import {TextBox} from '../components.js?v=48';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=48';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.

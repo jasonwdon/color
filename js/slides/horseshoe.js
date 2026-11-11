@@ -1,6 +1,6 @@
-import {TextBox} from '../components.js?v=47';
-import {onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=47';
-import {makePlot, lastView, LOCUS, maxOf} from './coneSpace.js?v=47';
+import {TextBox} from '../components.js?v=48';
+import {onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=48';
+import {makePlot, lastView, LOCUS, maxOf} from './coneSpace.js?v=48';
 
 // From the cone space to the horseshoe. The slide opens on the 3D plot just
 // as the last slide left it, then:
