@@ -218,6 +218,10 @@ function makePlot(container, interval) {
   canvas.style.cssText = 'display:block;touch-action:none;cursor:grab;';
   wrap.appendChild(canvas);
   const ctx = canvas.getContext('2d');
+  // the solid is drawn on its own layer first, so it can be laid over the
+  // rest see-through in one piece without the seams between quads showing
+  const layer = document.createElement('canvas');
+  const lctx = layer.getContext('2d');
 
   const hint = document.createElement('div');
   hint.textContent = 'drag to turn it';
@@ -312,6 +316,9 @@ function makePlot(container, interval) {
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    layer.width = canvas.width;
+    layer.height = canvas.height;
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     dirty = true;
     draw();
   }
@@ -359,7 +366,8 @@ function makePlot(container, interval) {
     for (let a = 0; a < 8; a++) for (const [bit, axis] of [[1, 0], [2, 1], [4, 2]]) {
       if (a & bit) continue;
       const others = [0, 1, 2].filter(x => x !== axis);
-      const front = others.some(x => faceFacing(x, corners[a][x]));
+      // with the solid see-through, everything shows
+      const front = showScreen || others.some(x => faceFacing(x, corners[a][x]));
       boxEdges.push({from: corners[a], to: corners[a | bit], front, axis: a === 0 ? axis : -1});
     }
     const drawEdges = (front) => {
@@ -393,19 +401,21 @@ function makePlot(container, interval) {
         color: `rgb(${q.rgb.map(c => Math.round(Math.min(255, c * shade))).join(',')})`});
     }
     shown.sort((a, b) => a.depth - b.depth);
-    ctx.globalAlpha = showScreen ? 0.4 : 1;
-    ctx.lineJoin = 'round';
+    lctx.clearRect(0, 0, width, height);
+    lctx.lineJoin = 'round';
     for (const q of shown) {
-      ctx.fillStyle = q.color;
-      ctx.strokeStyle = q.color; // covers the hairline gaps between quads
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(q.pts[0][0], q.pts[0][1]);
-      for (let j = 1; j < 4; j++) ctx.lineTo(q.pts[j][0], q.pts[j][1]);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      lctx.fillStyle = q.color;
+      lctx.strokeStyle = q.color; // covers the hairline gaps between quads
+      lctx.lineWidth = 0.8;
+      lctx.beginPath();
+      lctx.moveTo(q.pts[0][0], q.pts[0][1]);
+      for (let j = 1; j < 4; j++) lctx.lineTo(q.pts[j][0], q.pts[j][1]);
+      lctx.closePath();
+      lctx.fill();
+      lctx.stroke();
     }
+    ctx.globalAlpha = showScreen ? 0.45 : 1;
+    ctx.drawImage(layer, 0, 0, width, height);
     ctx.globalAlpha = 1;
 
     if (showScreen) drawScreen();
