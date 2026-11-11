@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=38';
-import {onResize, mobileContentBottom} from '../utils.js?v=38';
+import {TextBox} from '../components.js?v=39';
+import {onResize, mobileContentBottom} from '../utils.js?v=39';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -396,7 +396,7 @@ const CAPTION =
 // ── Light slide ────────────────────────────────────────────────────────────
 
 export function LightMixingDesktop() {
-  const text = TextBox({text: LIGHT_TEXT, x: 50, y: 60, w: 400, size: '25px', align: 'left', lineHeight: '1.35'});
+  const text = TextBox({text: LIGHT_TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
   setupNote(text);
 
   const row = rightColumn();
@@ -476,7 +476,8 @@ function setupNote(el) {
     const sandbox = document.getElementById('sandbox').getBoundingClientRect();
     const maxW = Math.min(340, sandbox.width - 24);
     note.style.width = 'max-content';
-    note.style.width = Math.min(maxW, note.offsetWidth) + 'px';
+    // (rounded up, since a width a fraction too small wraps the last word)
+    note.style.width = Math.min(maxW, Math.ceil(note.getBoundingClientRect().width) + 1) + 'px';
     // centered on the slide (left is measured from the element that
     // positions the popup)
     note.style.top = '';
