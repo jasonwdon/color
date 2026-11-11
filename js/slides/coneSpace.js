@@ -41,12 +41,12 @@ const SCREEN_PRIMARIES = [
 const L_COLOR = 'rgb(230,60,60)', M_COLOR = 'rgb(60,160,60)', S_COLOR = 'rgb(70,70,240)';
 
 const TEXT =
-  "Hold that thought. First, let's map out every color.<br><br>" +
+  "Hold that thought. First, a map of every color.<br><br>" +
   "Every color you've ever seen comes down to 3 numbers: how hard your " +
   "<b style='color:red'>L</b>, <b style='color:green'>M</b>, and <b style='color:blue'>S</b> cones fire. " +
   "So every color is a point in this box.<br><br>" +
-  "Each single wavelength lands on the curve, and every mix of light lands inside the shape it makes. " +
-  "The rest of the box is empty, because our cones overlap and no light can fire them in those combinations.";
+  "Single wavelengths trace the curve, and every mix of light lands inside its shape. " +
+  "The rest is empty, because our cones overlap and no light can make those combinations.";
 
 // ── Geometry ───────────────────────────────────────────────────────────────
 
@@ -131,7 +131,7 @@ export function ConeSpaceDesktop(rc, ctx, interval) {
     'display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;';
   document.getElementById('sandbox').appendChild(col);
   const plot = makePlot(col, interval);
-  plot.setSize(400);
+  plot.setSize(490, 410);
   revealAfterFonts(col);
 }
 
@@ -154,13 +154,13 @@ export function ConeSpaceMobile(rc, ctx, interval) {
     const top = text.offsetTop + text.offsetHeight + 6;
     const room = mobileContentBottom() - top;
     const toggleH = plot.toggle.offsetHeight + 2;
-    const side = Math.floor(Math.min(W - 16, room - toggleH, 420));
+    const side = Math.floor(Math.min(W, room - toggleH, 440));
     if (side < 240 && fontSize > 15) {
       fontSize -= 1;
       text.style.fontSize = fontSize + 'px';
       return;
     }
-    plot.setSize(Math.max(160, side));
+    plot.setSize(W, Math.max(160, side));
     col.style.top = Math.round(top + Math.max(0, (room - side - toggleH) / 2)) + 'px';
   });
 }
@@ -191,7 +191,8 @@ function makePlot(container, interval) {
     'touch-action:manipulation;';
   container.appendChild(toggle);
 
-  let side = 300;
+  let width = 300, height = 300;
+  const side = () => Math.min(width, height);
   let showScreen = false;
   const setToggleText = () => {
     toggle.textContent = showScreen ? 'hide the screen colors' : 'show the colors a screen can make';
@@ -225,7 +226,7 @@ function makePlot(container, interval) {
     if (!p) return;
     if (pointers.size === 1) {
       const dx = e.clientX - p.x, dy = e.clientY - p.y;
-      const k = 2.8 / side; // a full drag across the plot is about half a turn
+      const k = 2.8 / side(); // a full drag across the plot is about half a turn
       rot = orthonormalize(matMul(rotX(dy * k), matMul(rotY(dx * k), rot)));
       dirty = true;
     }
@@ -259,13 +260,14 @@ function makePlot(container, interval) {
   }
 
   // ── drawing ──
-  function setSize(s) {
-    side = s;
+  function setSize(w, h) {
+    width = w;
+    height = h;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(s * dpr);
-    canvas.height = Math.round(s * dpr);
-    canvas.style.width = s + 'px';
-    canvas.style.height = s + 'px';
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     dirty = true;
     draw();
@@ -278,8 +280,8 @@ function makePlot(container, interval) {
     const w = toWorld(lms);
     const r = rot.map(row => row[0] * w[0] + row[1] * w[1] + row[2] * w[2]);
     const f = CAMERA / (CAMERA - r[2]);
-    const scale = side * 0.36 * zoom;
-    return [side / 2 + r[0] * scale * f, side / 2 - r[1] * scale * f, r[2]];
+    const scale = side() * 0.39 * zoom;
+    return [width / 2 + r[0] * scale * f, height / 2 - r[1] * scale * f, r[2]];
   }
   // fainter the farther back it is, so the front reads as the front
   const fade = (depth) => 0.45 + 0.55 * Math.min(1, Math.max(0, (depth + 0.9) / 1.8));
@@ -287,8 +289,8 @@ function makePlot(container, interval) {
   function draw() {
     if (!dirty) return;
     dirty = false;
-    ctx.clearRect(0, 0, side, side);
-    const fontPx = Math.max(14, Math.round(side / 22));
+    ctx.clearRect(0, 0, width, height);
+    const fontPx = Math.max(14, Math.round(side() / 22));
 
     // the box: light edges, except the three from black, which are the axes
     const O = [0, 0, 0];
@@ -372,7 +374,7 @@ function makePlot(container, interval) {
       ctx.lineTo(b.p[0], b.p[1]);
       ctx.stroke();
     }
-    const dotR = Math.max(2.5, side / 130);
+    const dotR = Math.max(2.5, side() / 130);
     locus.filter(pt => pt.nm % 10 === 0).sort((a, b) => a.p[2] - b.p[2]).forEach(pt => {
       ctx.globalAlpha = fade(pt.p[2]);
       ctx.fillStyle = `rgb(${pt.rgb.join(',')})`;
@@ -397,10 +399,10 @@ function makePlot(container, interval) {
       ctx.fillStyle = color;
       ctx.fillText(txt, x, y);
     };
-    for (const nm of [450, 500, 550, 600, 650]) {
+    for (const nm of [450, 500, 550, 600]) {
       const pt = locus.find(q => q.nm === nm);
       // nudge the label away from the middle of the box
-      const dx = pt.p[0] - side / 2, dy = pt.p[1] - side / 2;
+      const dx = pt.p[0] - width / 2, dy = pt.p[1] - height / 2;
       const len = Math.hypot(dx, dy) || 1;
       label(nm + 'nm', pt.p[0] + dx / len * fontPx * 1.6, pt.p[1] + dy / len * fontPx * 0.9,
         '#555', Math.round(fontPx * 0.8));
@@ -427,7 +429,7 @@ function makePlot(container, interval) {
     }
     ctx.stroke();
     ctx.restore();
-    const r = Math.max(3, side / 100);
+    const r = Math.max(3, side() / 100);
     pts.slice(1).forEach(pt => {
       ctx.fillStyle = pt.color;
       ctx.strokeStyle = '#333';
@@ -438,7 +440,7 @@ function makePlot(container, interval) {
       ctx.stroke();
     });
     const w = pts[7].p;
-    ctx.font = `bold ${Math.max(13, Math.round(side / 26))}px Gaegu`;
+    ctx.font = `bold ${Math.max(13, Math.round(side() / 26))}px Gaegu`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.lineWidth = 4;
