@@ -124,8 +124,11 @@ function blendAff(m0, m1, t) {
 
 const ease = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 const span = (t, a, b) => ease((t - a) / (b - a));
-const T = {raysIn: [0.3, 0.9], sweep: [0.9, 2.6], turn: [3.1, 4.8], fade: [3.1, 4.1],
-  flat: [4.8, 6.2], chart: [5.8, 6.6], end: 6.6};
+// the camera turns part way while the slice sweeps out, so the slice opens
+// up instead of being seen edge on, then the rest of the way as the 3D fades
+const T = {raysIn: [0.3, 0.9], sweep: [0.9, 3.0], turn1: [0.9, 3.0], turn2: [3.5, 4.9], fade: [3.5, 4.4],
+  flat: [4.9, 6.3], chart: [5.9, 6.7], end: 6.7};
+const TURN1 = 0.55;
 
 const TEXT = [
   "Every line out from black is one color getting brighter.",
@@ -217,7 +220,7 @@ function startHorseshoe(container, interval, phone, text) {
     if (start === null) start = now;
     t = now - start;
     paras.forEach((p, i) => { p.style.opacity = t >= PARA_AT[i] ? '1' : '0'; });
-    const turn = span(t, ...T.turn);
+    const turn = TURN1 * span(t, ...T.turn1) + (1 - TURN1) * span(t, ...T.turn2);
     plot.setView(from.yaw + (toYaw - from.yaw) * turn, from.pitch + (FACE.pitch - from.pitch) * turn);
     plot.setSceneAlpha(1 - span(t, ...T.fade));
     plot.redraw();
