@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=43';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=43';
+import {TextBox} from '../components.js?v=44';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=44';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -194,7 +194,7 @@ export function ConeSpaceMobile(rc, ctx, interval) {
   onResize([text], () => {
     const top = text.offsetTop + text.offsetHeight + 6;
     const room = mobileContentBottom() - top;
-    const toggleH = plot.toggle.offsetHeight + 2;
+    const toggleH = plot.legend.offsetHeight + 2;
     const side = Math.floor(Math.min(W, room - toggleH, 440));
     if (side < 240 && fontSize > 15) {
       fontSize -= 1;
@@ -207,7 +207,7 @@ export function ConeSpaceMobile(rc, ctx, interval) {
 }
 
 // The 3D plot: a canvas you can drag to turn (and scroll or pinch to zoom),
-// with a button under it that shows the colors a screen can make.
+// with a note under it on the dashed box of colors a screen can make.
 function makePlot(container, interval) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:relative;';
@@ -229,21 +229,14 @@ function makePlot(container, interval) {
     'font-family:Gaegu,cursive;font-size:18px;font-weight:bold;color:#777;';
   wrap.appendChild(hint);
 
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.style.cssText = 'border:none;background:none;padding:2px 4px;cursor:pointer;color:#777;' +
-    'font-family:Gaegu,cursive;font-size:18px;text-decoration:underline dotted;text-underline-offset:3px;' +
-    'touch-action:manipulation;';
-  container.appendChild(toggle);
+  // a note under the plot on what the dashed box inside it is
+  const legend = document.createElement('div');
+  legend.textContent = 'dashed box: the colors a screen can make';
+  legend.style.cssText = 'padding:2px 4px;color:#777;font-family:Gaegu,cursive;font-size:18px;';
+  container.appendChild(legend);
 
   let width = 300, height = 300;
   const side = () => Math.min(width, height);
-  let showScreen = false;
-  const setToggleText = () => {
-    toggle.textContent = showScreen ? 'hide the screen colors' : 'show the colors a screen can make';
-  };
-  setToggleText();
-  toggle.addEventListener('click', () => { showScreen = !showScreen; setToggleText(); dirty = true; });
 
   // Turns like a globe on a stand: side to side spins it around the S axis,
   // up and down tilts it toward or away from you, never past straight
@@ -348,31 +341,20 @@ function makePlot(container, interval) {
       return n[0] * -m[0] + n[1] * -m[1] + n[2] * (CAMERA - m[2]) > 0;
     };
 
-    // the box's edges and the axes (three of its edges): one in front of
-    // the solid when either of the box's faces beside it faces you
+    // the box's edges and the axes (three of its edges), drawn over the
+    // see-through solid
     const O = [0, 0, 0];
     const o = project(O);
     const corners = [];
     for (let n = 0; n < 8; n++) corners.push([n & 1, (n >> 1) & 1, (n >> 2) & 1]);
-    const faceFacing = (axis, val) => {
-      const n = [0, 0, 0];
-      n[axis] = val ? 1 : -1;
-      const c = [0.5, 0.5, 0.5];
-      c[axis] = val;
-      return facing({normal: toWorld(n.map(x => x + 0.5)), mid: toWorld(c)});
-    };
     const axisColors = [L_COLOR, M_COLOR, S_COLOR];
     const boxEdges = [];
     for (let a = 0; a < 8; a++) for (const [bit, axis] of [[1, 0], [2, 1], [4, 2]]) {
       if (a & bit) continue;
-      const others = [0, 1, 2].filter(x => x !== axis);
-      // with the solid see-through, everything shows
-      const front = showScreen || others.some(x => faceFacing(x, corners[a][x]));
-      boxEdges.push({from: corners[a], to: corners[a | bit], front, axis: a === 0 ? axis : -1});
+      boxEdges.push({from: corners[a], to: corners[a | bit], axis: a === 0 ? axis : -1});
     }
-    const drawEdges = (front) => {
+    const drawEdges = () => {
       for (const e of boxEdges) {
-        if (e.front !== front) continue;
         const pa = project(e.from), pb = project(e.to);
         ctx.strokeStyle = e.axis >= 0 ? axisColors[e.axis] : '#ccc';
         ctx.lineWidth = e.axis >= 0 ? 2.5 : 1;
@@ -382,11 +364,9 @@ function makePlot(container, interval) {
         ctx.stroke();
       }
     };
-    drawEdges(false);
 
     // the solid: only the quads facing you, shaded by a light from the upper
-    // left. With the screen colors showing it turns see-through so the
-    // screen's box inside shows.
+    // left. It's drawn see-through so the screen's box inside shows.
     const LIGHT = [-0.45, 0.65, 0.62];
     const sideFront = new Set(), capFront = new Set();
     const shown = [];
@@ -414,11 +394,12 @@ function makePlot(container, interval) {
       lctx.fill();
       lctx.stroke();
     }
-    ctx.globalAlpha = showScreen ? 0.45 : 1;
+    // see-through, so the screen's colors show inside
+    ctx.globalAlpha = 0.45;
     ctx.drawImage(layer, 0, 0, width, height);
     ctx.globalAlpha = 1;
 
-    if (showScreen) drawScreen();
+    drawScreen();
 
     // the rim where the solid meets the walls
     const edge = EDGE.map(e => project(e.lms));
@@ -433,7 +414,7 @@ function makePlot(container, interval) {
     });
     ctx.stroke();
 
-    drawEdges(true);
+    drawEdges();
 
     // the spectral locus, which runs along the side of the solid: a dark
     // line with a dot every 10nm, only where that side faces you
@@ -489,19 +470,11 @@ function makePlot(container, interval) {
       label(nm + 'nm', pt.p[0] + side * (dotR + 3), pt.p[1], '#555', Math.round(fontPx * 0.8),
         side < 0 ? 'right' : 'left');
     }
-    // an axis hidden behind the solid gets a fainter label
-    axes.forEach((ax, i) => {
+    for (const ax of axes) {
       const p = project(ax.to.map(c => c * 1.13));
-      const e = boxEdges.find(b => b.axis === i);
-      ctx.globalAlpha = e.front ? 1 : 0.5;
       label(ax.label, p[0], p[1], ax.color, fontPx);
-    });
-    ctx.globalAlpha = 1;
-    // black sits at the corner where the axes meet, behind the solid when
-    // all three are
-    ctx.globalAlpha = boxEdges.some(b => b.axis >= 0 && b.front) ? 1 : 0.5;
+    }
     label('black', o[0], o[1] + fontPx * 0.9, '#333', Math.round(fontPx * 0.85));
-    ctx.globalAlpha = 1;
     ctx.textBaseline = 'alphabetic';
   }
 
@@ -546,5 +519,5 @@ function makePlot(container, interval) {
   // redraw once the handwritten font is in, for the labels
   if (document.fonts) document.fonts.load('bold 16px Gaegu').then(() => { dirty = true; }, () => {});
 
-  return {setSize, toggle};
+  return {setSize, legend};
 }
