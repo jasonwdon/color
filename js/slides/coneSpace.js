@@ -56,7 +56,8 @@ const TEXT =
   "each color sits based on how much each cone is stimulated.<br><br>" +
   "Note that there's lots of empty space, because it's impossible to reach. Since the cones have " +
   "overlapping ranges, it's impossible to stimulate one without stimulating the others.<br><br>" +
-  "Then we can trace the visible spectrum on the 3D shape as a line.";
+  "Then we can trace the visible spectrum on the 3D shape as a line. Each straight line out from " +
+  "black is one color getting brighter.";
 
 // ── Geometry ───────────────────────────────────────────────────────────────
 
@@ -102,6 +103,15 @@ for (let a = 0; a < 8; a++) for (const bit of [1, 2, 4]) if (!(a & bit)) GAMUT_E
     }
   }
 })();
+
+// Lines of one color at every brightness: straight out from black (more of
+// the same light just scales all three cone responses). A few spectral
+// colors, a purple, and white out to the far corner of the box.
+const BRIGHT_RAYS = [
+  ...[470, 500, 530, 570, 610].map(nm => LOCUS.findIndex(p => p.nm === nm)),
+  LOCUS.length + 6,
+].map(i => ({edge: i, lms: EDGE[i].lms, rgb: EDGE[i].rgb}))
+  .concat([{edge: -1, lms: [1, 1, 1], rgb: [255, 255, 255], white: true}]);
 
 // cone space (L, M, S) to world (x right, y up, z out of the screen), with
 // the middle of the box at the origin: L along x, S up, M along z
@@ -485,6 +495,28 @@ export function makePlot(container, interval, phone, opts = {}) {
 
     drawEdges();
 
+    // the lines of one color getting brighter, fading in from black; the
+    // ones on the far side of the solid are fainter
+    ctx.lineCap = 'round';
+    for (const ray of BRIGHT_RAYS) {
+      const b = project(ray.lms);
+      const front = ray.edge < 0 || sideFront.has(ray.edge) || sideFront.has(ray.edge - 1);
+      const g = ctx.createLinearGradient(o[0], o[1], b[0], b[1]);
+      g.addColorStop(0, 'rgb(0,0,0)');
+      g.addColorStop(1, `rgb(${ray.rgb.join(',')})`);
+      ctx.globalAlpha = sceneAlpha * (front ? 1 : 0.4);
+      ctx.beginPath();
+      ctx.moveTo(o[0], o[1]);
+      ctx.lineTo(b[0], b[1]);
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)'; // so the light end shows on white
+      ctx.lineWidth = 4.5;
+      ctx.stroke();
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = sceneAlpha;
+
     // the spectral locus, which runs along the side of the solid: a dark
     // line with a dot every 10nm, only where that side faces you
     const locus = LOCUS.map(pt => ({...pt, p: project(pt.lms)}));
@@ -544,6 +576,8 @@ export function makePlot(container, interval, phone, opts = {}) {
       label(ax.label, p[0], p[1], ax.color, fontPx);
     }
     label('black', o[0], o[1] + fontPx * 0.9, '#333', Math.round(fontPx * 0.85));
+    const w = project([1, 1, 1]);
+    label('white', w[0], w[1] - fontPx * 0.7, '#777', Math.round(fontPx * 0.85));
     ctx.textBaseline = 'alphabetic';
   }
 

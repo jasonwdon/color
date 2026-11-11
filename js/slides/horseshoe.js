@@ -1,10 +1,10 @@
 import {TextBox} from '../components.js?v=47';
 import {onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=47';
-import {makePlot, lastView, LOCUS, EDGE, maxOf} from './coneSpace.js?v=47';
+import {makePlot, lastView, LOCUS, maxOf} from './coneSpace.js?v=47';
 
 // From the cone space to the horseshoe. The slide opens on the 3D plot just
 // as the last slide left it, then:
-//  1. lines from black show that each one is a single color getting brighter
+//  1. (the lines from black on the plot are each one color getting brighter)
 //  2. a flat slice sweeps out from black, crossing every line once
 //  3. the plot fades and the camera turns to look at the slice face on
 //  4. the slice slides flat into the familiar chromaticity diagram (CIE xy)
@@ -27,12 +27,6 @@ const CUT = 0.9 * Math.min(...LOCUS.map(p => total(p.lms) / maxOf(p.lms)));
 const SLICE = LOCUS.map(p => {
   const X = toXyz(p.lms), sum = X[0] + X[1] + X[2];
   return {nm: p.nm, rgb: p.rgb, lms: p.lms.map(c => c * CUT / total(p.lms)), xy: [X[0] / sum, X[1] / sum]};
-});
-
-// a few lines from black, out to where they meet the walls of the box
-const RAYS = [460, 490, 520, 560, 610].map(nm => {
-  const i = LOCUS.findIndex(p => p.nm === nm);
-  return {nm, rgb: LOCUS[i].rgb, end: EDGE[i].lms, cross: SLICE[i].lms};
 });
 
 // The view that looks at the slice face on, from the black side, so the
@@ -127,11 +121,11 @@ const span = (t, a, b) => ease((t - a) / (b - a));
 // the camera swings round (still from above) while the slice sweeps out, so
 // the slice opens up instead of being seen edge on, then tips down to face
 // it as the 3D fades
-const T = {raysIn: [0.3, 0.9], sweep: [0.9, 3.0], turn1: [0.9, 3.0], turn2: [3.5, 4.9], fade: [3.5, 4.4],
-  flat: [4.9, 6.3], chart: [5.9, 6.7], end: 6.7};
+const T = {sweep: [0.6, 2.7], turn1: [0.6, 2.7], turn2: [3.2, 4.6], fade: [3.2, 4.1],
+  flat: [4.6, 6.0], chart: [5.6, 6.4], end: 6.4};
 
 const TEXT = [
-  "Every line out from black is one color getting brighter.",
+  "Remember, each line out from black is one color getting brighter.",
   "Cut through all those lines with one flat slice, and each color shows up once, " +
     "with its brightness thrown away.",
   "Lay the slice flat and you get the famous horseshoe: single wavelengths around the curve, " +
@@ -266,25 +260,8 @@ function startHorseshoe(container, interval, phone, text) {
     }
     const aff = fitAff(xy, pts);
 
-    // the lines from black, and the see-through plane of the slice
+    // the see-through plane of the slice (the lines from black are part of the plot)
     const sceneFade = 1 - span(t, ...T.fade);
-    const raysA = span(t, ...T.raysIn) * sceneFade;
-    if (raysA > 0) {
-      ctx.save();
-      ctx.globalAlpha = raysA;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 4]);
-      const o = plot.project([0, 0, 0]);
-      for (const r of RAYS) {
-        const e = plot.project(r.end);
-        ctx.strokeStyle = `rgb(${r.rgb.join(',')})`;
-        ctx.beginPath();
-        ctx.moveTo(o[0], o[1]);
-        ctx.lineTo(e[0], e[1]);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
     if (sliceIn * sceneFade > 0) drawPlane(ctx, out * CUT, sliceIn * sceneFade);
 
     if (sliceIn > 0) {
