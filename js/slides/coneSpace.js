@@ -280,7 +280,7 @@ function makePlot(container, interval) {
     const w = toWorld(lms);
     const r = rot.map(row => row[0] * w[0] + row[1] * w[1] + row[2] * w[2]);
     const f = CAMERA / (CAMERA - r[2]);
-    const scale = side() * 0.39 * zoom;
+    const scale = side() * 0.42 * zoom;
     return [width / 2 + r[0] * scale * f, height / 2 - r[1] * scale * f, r[2]];
   }
   // fainter the farther back it is, so the front reads as the front
