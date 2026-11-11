@@ -1,7 +1,7 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button} from './components.js?v=40';
-import {clearSandbox, setDimensions} from './utils.js?v=40';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=40';
+import {Button} from './components.js?v=41';
+import {clearSandbox, setDimensions} from './utils.js?v=41';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=41';
 
 let interval = {id: null};
 let slideIndex = 0;
@@ -11,6 +11,7 @@ const slides = [
   { name: 'ryb',             desktop: RYBDesktop,             mobile: RYBMobile },
   { name: 'electromagnetic', desktop: ElectromagneticDesktop, mobile: ElectromagneticMobile },
   { name: 'cones',           desktop: ConesDesktop,           mobile: ConesMobile },
+  { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile },
   { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile },
   { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile },
 ];

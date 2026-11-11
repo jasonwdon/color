@@ -41,6 +41,7 @@ const slides = [
   { name: 'ryb',             desktop: RYBDesktop,             mobile: RYBMobile },
   { name: 'electromagnetic', desktop: ElectromagneticDesktop, mobile: ElectromagneticMobile },
   { name: 'cones',           desktop: ConesDesktop,           mobile: ConesMobile },
+  { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile },
   { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile },
   { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile },
 ];
@@ -196,6 +197,12 @@ for (let px = 0; px <= w; px++) {
 - Converts wavelength (380–780nm) to `"rgba(R%,G%,B%,0.85)"`
 - Uses constant alpha (0.85) — no brightness falloff at spectrum edges
 - All wavelengths above ~645nm return the same pure red on an sRGB display; spectrum bars cap at 650nm for this reason
+
+---
+
+## Cone Space Slide (`coneSpace.js`)
+
+A 3D plot of color with one axis per cone (L right, S up, M in depth), drawn on its own canvas with plain 2D canvas math (no 3D library). It uses real Stockman & Sharpe 2° cone fundamentals at 5nm, each cone scaled to peak 1. It shows the spectral locus (equal energy of each wavelength), the solid of real colors as a fan of translucent triangles from black out to where each ray meets the walls of the box (closed by the purples), and a toggle for the screen's RGB gamut as a dashed parallelepiped. Drag turns it freely, wheel or pinch zooms, and it spins slowly until first touched. Its canvas has `touch-action: none` so dragging never scrolls or refreshes the page. `revealAfterFonts(el)` in `utils.js` fades the plot in once Gaegu has loaded.
 
 ---
 

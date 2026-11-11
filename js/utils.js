@@ -82,3 +82,21 @@ export function removeById(id) {
 export function clearCanvas(ctx) {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
 }
+
+// The handwritten font loads after the first layout on a fresh visit, and
+// text rewraps when it arrives, which moves whatever sits under it. Keep el
+// hidden until the font is in and the layout has settled, then fade it in.
+export function revealAfterFonts(el) {
+  el.style.opacity = '0';
+  const show = () => {
+    if (el.style.opacity !== '0') return;
+    el.style.transition = 'opacity 0.4s ease-in';
+    el.style.opacity = '1';
+  };
+  const fonts = document.fonts
+    ? Promise.all([document.fonts.load('20px Gaegu'), document.fonts.load('bold 20px Gaegu')])
+    : Promise.resolve();
+  // two frames so the resize handlers have placed everything
+  fonts.catch(() => {}).then(() => requestAnimationFrame(() => requestAnimationFrame(show)));
+  setTimeout(show, 2000); // never leave it hidden if the font is slow
+}
