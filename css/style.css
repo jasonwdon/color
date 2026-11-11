@@ -211,6 +211,21 @@ wired-button:hover {
   font-size: 15px;
 }
 
+/* a term inside a sentence that opens a note: it keeps the sentence's own
+   font, size, weight and color, and only gains the dotted underline */
+.note-link.inline-term {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  white-space: normal;
+}
+
+.note-link.inline-term:hover,
+.note-link.inline-term[aria-expanded='true'] {
+  color: #555;
+}
+
 .note-link:hover,
 .note-link[aria-expanded='true'] {
   color: #444;
@@ -231,6 +246,7 @@ wired-button:hover {
   box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.15);
   font-family: Gaegu, cursive;
   font-size: 18px;
+  font-weight: normal;
   line-height: 1.25;
   text-align: left;
   color: #222;

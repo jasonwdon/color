@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=35';
-import {onResize, mobileContentBottom} from '../utils.js?v=35';
+import {TextBox} from '../components.js?v=36';
+import {onResize, mobileContentBottom} from '../utils.js?v=36';
 
 // Two slides share the mixer: light (additive, red/green/blue light on black)
 // and paint (subtractive, cyan/magenta/yellow pigment on white).
@@ -362,7 +362,11 @@ const WHITE = "<b style='color:white; background-color:black; padding: 0 4px; bo
 // same text on phones and desktop
 const LIGHT_TEXT =
   "Ah, our first conundrum. Let's clear it up.<br><br>" +
-  `<b>The true primary colors of human vision are ${RED}, ${GREEN} and ${BLUE}</b>. ` +
+  `<b>The true <span class='note-anchor'><button type='button' class='note-link inline-term' aria-expanded='false'>` +
+  `primary colors</button><span class='note-popup' hidden>"Primary colors" are actually made up. ` +
+  "No three base light sources can trigger every combination of cone responses because each of our cones " +
+  `reacts to an overlapping range of frequencies. ${RGB} just happens to cover the widest area of our visual range ` +
+  `with only three lights.</span></span> of human vision are ${RED}, ${GREEN} and ${BLUE}</b>. ` +
   "They're the three axes our brain uses to read color.<br><br>" +
   `With no light at all, we see ${BLACK}. Turn the lights on and we get our different colors.`;
 
@@ -384,7 +388,8 @@ const CAPTION =
 // ── Light slide ────────────────────────────────────────────────────────────
 
 export function LightMixingDesktop() {
-  TextBox({text: LIGHT_TEXT, x: 50, y: 60, w: 400, size: '25px', align: 'left', lineHeight: '1.35'});
+  const text = TextBox({text: LIGHT_TEXT, x: 50, y: 60, w: 400, size: '25px', align: 'left', lineHeight: '1.35'});
+  setupNote(text);
 
   const row = rightColumn();
   makePanel(row, {colors: RGB_COLORS, mode: 'additive',
@@ -394,10 +399,11 @@ export function LightMixingDesktop() {
 export function LightMixingMobile() {
   const W = window.innerWidth;
   const side = Math.min(320, W - 40);
-  layoutMobile(LIGHT_TEXT, 21, (row) => {
+  const text = layoutMobile(LIGHT_TEXT, 21, (row) => {
     makePanel(row, {colors: RGB_COLORS, mode: 'additive',
       canvasW: side, canvasH: side, brushSize: 40, fontSize: '20px', clearInline: true});
   });
+  setupNote(text);
 }
 
 // ── Paint slide ────────────────────────────────────────────────────────────
@@ -459,10 +465,10 @@ function setupNote(el) {
     // as wide as reads well, but never wider than the screen
     const sandbox = document.getElementById('sandbox').getBoundingClientRect();
     note.style.width = Math.min(340, sandbox.width - 24) + 'px';
-    // centered on the slide (left is measured from the caption, which
-    // holds the popup)
+    // centered on the slide (left is measured from the element that
+    // positions the popup)
     note.style.top = '';
-    const anchor = el.getBoundingClientRect();
+    const anchor = (note.offsetParent || el).getBoundingClientRect();
     const left = sandbox.left + (sandbox.width - note.offsetWidth) / 2 - anchor.left;
     note.style.left = Math.round(left) + 'px';
     // open upward if it would run off the bottom
