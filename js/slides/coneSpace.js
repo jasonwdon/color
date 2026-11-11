@@ -52,12 +52,11 @@ const SCREENS = [
 const L_COLOR = 'rgb(230,60,60)', M_COLOR = 'rgb(60,160,60)', S_COLOR = 'rgb(70,70,240)';
 
 const TEXT =
-  "One last thing: here's every color at once.<br><br>" +
-  "Every color you've ever seen comes down to 3 numbers: how hard your " +
-  "<b style='color:red'>L</b>, <b style='color:green'>M</b>, and <b style='color:blue'>S</b> cones fire. " +
-  "So every color is a point in this box.<br><br>" +
-  "Single wavelengths trace the dark curve, and every mix of light lands inside the shape. " +
-  "The rest is empty, because our cones overlap and no light can make those combinations.";
+  "Now back to physics and biology. We can graph the colors we can see on 3 axes, to show where " +
+  "each color sits based on how much each cone is stimulated.<br><br>" +
+  "Note that there's lots of empty space, because it's impossible to reach. Since the cones have " +
+  "overlapping ranges, it's impossible to stimulate one without stimulating the others.<br><br>" +
+  "Then we can trace the visible spectrum on the 3D shape as a line.";
 
 // ── Geometry ───────────────────────────────────────────────────────────────
 
