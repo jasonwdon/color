@@ -184,7 +184,7 @@ function rotY(a) {
 // ── Slide ──────────────────────────────────────────────────────────────────
 
 export function ConeSpaceDesktop(rc, ctx, interval) {
-  TextBox({text: TEXT, x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
+  TextBox({text: TEXT, x: 50, y: 55, w: 400, size: '21px', align: 'left', lineHeight: '1.3'});
 
   // the plot and the list of screens share the right side, above BACK/NEXT
   const row = document.createElement('div');
@@ -502,7 +502,9 @@ export function makePlot(container, interval, phone, opts = {}) {
       const b = project(ray.lms);
       const front = ray.edge < 0 || sideFront.has(ray.edge) || sideFront.has(ray.edge - 1);
       const g = ctx.createLinearGradient(o[0], o[1], b[0], b[1]);
+      // brightness looks more even with gamma, so the color shows early on
       g.addColorStop(0, 'rgb(0,0,0)');
+      g.addColorStop(0.25, `rgb(${ray.rgb.map(c => Math.round(c * 0.53)).join(',')})`);
       g.addColorStop(1, `rgb(${ray.rgb.join(',')})`);
       ctx.globalAlpha = sceneAlpha * (front ? 1 : 0.4);
       ctx.beginPath();
