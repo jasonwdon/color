@@ -1,5 +1,5 @@
-import {TextBox} from '../components.js?v=46';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=46';
+import {TextBox} from '../components.js?v=47';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=47';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -61,7 +61,7 @@ const TEXT =
 
 // ── Geometry ───────────────────────────────────────────────────────────────
 
-const maxOf = (v) => Math.max(v[0], v[1], v[2]);
+export const maxOf = (v) => Math.max(v[0], v[1], v[2]);
 
 // the deck's own rainbow colors, as [r, g, b] 0-255
 function spectrumRgb(nm) {
@@ -69,12 +69,12 @@ function spectrumRgb(nm) {
 }
 
 // the spectral locus: the cone responses to equal amounts of each wavelength
-const LOCUS = CONE_DATA.map(([nm, l, m, s]) => ({nm, lms: [l, m, s], rgb: spectrumRgb(nm)}));
+export const LOCUS = CONE_DATA.map(([nm, l, m, s]) => ({nm, lms: [l, m, s], rgb: spectrumRgb(nm)}));
 
 // The edge of the solid of real colors, where it meets the walls of the box:
 // each wavelength's ray from black pushed out until one cone is at 1, then
 // the purples (mixes of the two ends of the spectrum) to close the loop.
-const EDGE = (() => {
+export const EDGE = (() => {
   const edge = LOCUS.map(p => ({lms: p.lms.map(c => c / maxOf(p.lms)), rgb: p.rgb}));
   const first = edge[0], last = edge[edge.length - 1];
   const PURPLES = 14;
@@ -217,17 +217,26 @@ export function ConeSpaceMobile(rc, ctx, interval) {
   });
 }
 
+// The view the cone space plot was last left at, so the next slide can pick
+// up from exactly there.
+export const lastView = {yaw: -0.29, pitch: 0.33, zoom: 1};
+
 // The 3D plot: a canvas you can drag to turn (and scroll or pinch to zoom),
 // with a list of kinds of screen beside it (under it on phones), each
 // showing the colors it can make as a dashed box inside the shape.
-function makePlot(container, interval, phone) {
+//  opts.still: no dragging or zooming (the next slide moves it itself)
+//  opts.view: {yaw, pitch, zoom} to start from
+//  opts.tick(): called every frame before drawing
+//  opts.overlay(ctx): called after the plot is drawn, to draw on top
+export function makePlot(container, interval, phone, opts = {}) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:relative;';
   container.appendChild(wrap);
 
   const canvas = document.createElement('canvas');
   // every touch on the plot turns it, so the page doesn't scroll or refresh
-  canvas.style.cssText = 'display:block;touch-action:none;cursor:grab;';
+  canvas.style.cssText = opts.still ? 'display:block;touch-action:manipulation;'
+    : 'display:block;touch-action:none;cursor:grab;';
   wrap.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   // the solid is drawn on its own layer first, so it can be laid over the
@@ -292,16 +301,19 @@ function makePlot(container, interval, phone) {
   // up and down tilts it toward or away from you, never past straight
   // above or below, so it can't end up upside down. Starts turned so all
   // three axes show, looking at the side with the rainbow curve on it.
-  let yaw = -0.29, pitch = 0.33;
+  let yaw = opts.view ? opts.view.yaw : -0.29, pitch = opts.view ? opts.view.pitch : 0.33;
   const MAX_PITCH = Math.PI / 2 - 0.05;
   let rot = matMul(rotX(pitch), rotY(yaw));
-  let zoom = 1;
+  let zoom = opts.view ? opts.view.zoom : 1;
   let dirty = true;
+  let sceneAlpha = 1; // the whole 3D plot fades out on the next slide
+  const remember = () => { if (!opts.still) Object.assign(lastView, {yaw, pitch, zoom}); };
+  remember();
 
   // ── dragging and zooming ──
   const pointers = new Map();
   let pinchDist = 0;
-  canvas.addEventListener('pointerdown', (e) => {
+  if (!opts.still) canvas.addEventListener('pointerdown', (e) => {
     hint.remove();
     pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
     canvas.setPointerCapture(e.pointerId);
@@ -319,6 +331,7 @@ function makePlot(container, interval, phone) {
       yaw += (e.clientX - p.x) * k;
       pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, pitch + (e.clientY - p.y) * k));
       rot = matMul(rotX(pitch), rotY(yaw));
+      remember();
       dirty = true;
     }
     p.x = e.clientX;
@@ -336,7 +349,7 @@ function makePlot(container, interval, phone) {
   };
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
-  canvas.addEventListener('wheel', (e) => {
+  if (!opts.still) canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     setZoom(zoom * Math.exp(-e.deltaY * 0.0015));
   }, {passive: false});
@@ -346,6 +359,7 @@ function makePlot(container, interval, phone) {
   }
   function setZoom(z) {
     zoom = Math.min(2.5, Math.max(0.6, z));
+    remember();
     dirty = true;
   }
 
@@ -381,6 +395,12 @@ function makePlot(container, interval, phone) {
     if (!dirty) return;
     dirty = false;
     ctx.clearRect(0, 0, width, height);
+    if (sceneAlpha > 0) drawScene();
+    ctx.globalAlpha = 1;
+    if (opts.overlay) opts.overlay(ctx);
+  }
+
+  function drawScene() {
     const fontPx = Math.max(14, Math.round(side() / 22));
 
     // where each point sits relative to the camera, for working out which
@@ -445,9 +465,9 @@ function makePlot(container, interval, phone) {
       lctx.stroke();
     }
     // see-through, so the screens' colors show inside
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = 0.45 * sceneAlpha;
     ctx.drawImage(layer, 0, 0, width, height);
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = sceneAlpha;
 
     for (const scr of SCREENS) if (picked.has(scr)) drawScreen(scr);
 
@@ -557,9 +577,19 @@ function makePlot(container, interval, phone) {
 
   // redraws after a drag or zoom (clearSandbox stops this when the slide
   // changes)
-  interval.id = setInterval(draw, 16);
+  interval.id = setInterval(() => {
+    if (opts.tick) opts.tick();
+    draw();
+  }, 16);
   // redraw once the handwritten font is in, for the labels
   if (document.fonts) document.fonts.load('bold 16px Gaegu').then(() => { dirty = true; }, () => {});
 
-  return {setSize, list};
+  return {
+    setSize, list, hint, canvas, project,
+    width: () => width, height: () => height, side,
+    view: () => ({yaw, pitch, zoom}),
+    setView(y, p) { yaw = y; pitch = p; rot = matMul(rotX(pitch), rotY(yaw)); dirty = true; },
+    setSceneAlpha(a) { sceneAlpha = a; dirty = true; },
+    redraw() { dirty = true; },
+  };
 }

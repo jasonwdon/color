@@ -1,7 +1,7 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button} from './components.js?v=46';
-import {clearSandbox, setDimensions} from './utils.js?v=46';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=46';
+import {Button} from './components.js?v=47';
+import {clearSandbox, setDimensions} from './utils.js?v=47';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, HorseshoeDesktop, HorseshoeMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=47';
 
 let interval = {id: null};
 let slideIndex = 0;
@@ -14,6 +14,7 @@ const slides = [
   { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile },
   { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile },
   { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile },
+  { name: 'horseshoe',       desktop: HorseshoeDesktop,       mobile: HorseshoeMobile },
 ];
 
 document.addEventListener("DOMContentLoaded", init);

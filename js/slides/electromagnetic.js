@@ -1,5 +1,5 @@
-import {TextBox, Slider} from '../components.js?v=46';
-import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=46';
+import {TextBox, Slider} from '../components.js?v=47';
+import {wavelengthToColor, clearCanvas, onResize, mobileContentBottom} from '../utils.js?v=47';
 
 const DELAY = 100;
 
