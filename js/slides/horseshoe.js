@@ -121,8 +121,9 @@ const span = (t, a, b) => ease((t - a) / (b - a));
 // the camera swings round (still from above) while the slice sweeps out, so
 // the slice opens up instead of being seen edge on, then tips down to face
 // it as the 3D fades
-const T = {sweep: [0.6, 2.7], turn1: [0.6, 2.7], turn2: [3.2, 4.6], fade: [3.2, 4.1],
-  flat: [4.6, 6.0], chart: [5.6, 6.4], end: 6.4};
+// (in seconds; the whole thing takes about 2)
+const T = {sweep: [0.15, 0.85], turn1: [0.15, 0.85], turn2: [0.9, 1.4], fade: [0.9, 1.25],
+  flat: [1.35, 1.9], chart: [1.7, 2.1], end: 2.1};
 
 const PURPLES = "<b style='color:#7a3f9a'>purples</b>";
 const TEXT = [
@@ -136,7 +137,7 @@ const TEXT = [
 const PARA_AT = [0, T.sweep[0], T.chart[0]];
 
 function slideText() {
-  return TEXT.map((t, i) => `<span class="hs-p" style="display:block;transition:opacity 0.8s;` +
+  return TEXT.map((t, i) => `<span class="hs-p" style="display:block;transition:opacity 0.4s;` +
     `opacity:${i ? 0 : 1};margin-bottom:0.7em">${t}</span>`).join('');
 }
 
@@ -243,7 +244,7 @@ function startHorseshoe(container, interval, phone, text) {
 
     // the slice, moving out from black during the sweep
     const out = 0.06 + 0.94 * span(t, ...T.sweep);
-    const sliceIn = span(t, T.sweep[0], T.sweep[0] + 0.3);
+    const sliceIn = span(t, T.sweep[0], T.sweep[0] + 0.12);
     const xy = SLICE.map(p => p.xy);
     const proj = SLICE.map(p => plot.project(p.lms.map(c => c * out)));
     let pts = proj.map(p => [p[0], p[1]]);
