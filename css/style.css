@@ -1,3 +1,6 @@
+/* one look only: no dark mode, and no browser auto-darkening */
+:root { color-scheme: only light; }
+
 body {
   display: flex;
   justify-content: center;
