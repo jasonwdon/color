@@ -126,12 +126,12 @@ const T = {sweep: [0.6, 2.7], turn1: [0.6, 2.7], turn2: [3.2, 4.6], fade: [3.2, 
 
 const PURPLES = "<b style='color:#7a3f9a'>purples</b>";
 const TEXT = [
-  "That shape is hard to read, and a lot of it is the same color at different brightnesses.",
+  "That shape is hard to read, and lots of it is one color at different brightnesses.",
   "So let's slice through it. Every line out from <b>black</b> crosses the slice once, " +
     "so each color shows up once, just without its brightness.",
-  "Lay the slice flat and you get the famous <b>horseshoe</b>, a map of every color we can see. " +
-    `The rainbow runs around the curve, and the ${PURPLES} along the bottom are red and blue mixes ` +
-    "that no single wavelength can make.",
+  "Lay it flat and you get the famous <b>horseshoe</b>, a map of every color we can see. " +
+    `The rainbow runs around the curve, and the ${PURPLES} along the bottom are mixes ` +
+    "no single wavelength can make.",
 ];
 const PARA_AT = [0, T.sweep[0], T.chart[0]];
 
@@ -143,7 +143,7 @@ function slideText() {
 // ── Slide ──────────────────────────────────────────────────────────────────
 
 export function HorseshoeDesktop(rc, ctx, interval) {
-  const text = TextBox({text: slideText(), x: 50, y: 60, w: 400, size: '24px', align: 'left', lineHeight: '1.35'});
+  const text = TextBox({text: slideText(), x: 50, y: 60, w: 400, size: '22px', align: 'left', lineHeight: '1.3'});
   // the same row as the cone space slide, so the plot starts exactly where it was
   const row = document.createElement('div');
   row.style.cssText = 'position:absolute;left:455px;width:540px;top:50px;height:440px;' +
