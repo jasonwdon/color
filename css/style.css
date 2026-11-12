@@ -111,13 +111,13 @@ wired-button:hover {
 }
 
 .next-button {
-  left: 712px;
+  left: 795px;
   top: 505px;
   font-size: 24px;
 }
 
 .back-button {
-  left: 212px;
+  left: 130px;
   top: 505px;
   font-size: 24px;
 }
@@ -147,9 +147,14 @@ wired-button:hover {
   touch-action: manipulation;
 }
 
+.section-item:disabled,
+.section-item.current {
+  color: #222;
+  cursor: default;
+}
+
 .section-item:disabled {
   color: #bbb;
-  cursor: default;
 }
 
 .section-mark {
@@ -185,6 +190,7 @@ wired-button:hover {
   margin-top: 3px;
   font-size: 15px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .section-item.current .section-name {

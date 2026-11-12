@@ -95,7 +95,7 @@ export function RadioButton(config) {
 //   sections: [{name, enabled}], current: index, onPick(index), phone: bool
 export function SectionNav(config) {
   const {sections, current, onPick, phone} = config;
-  const itemW = phone ? 44 : 104, dot = phone ? 26 : 28;
+  const itemW = phone ? 44 : 130, dot = phone ? 26 : 28;
   const nav = document.createElement('nav');
   nav.className = 'object section-nav' + (phone ? ' phone' : '');
   nav.setAttribute('aria-label', 'Sections');

@@ -191,7 +191,7 @@ function rotY(a) {
 // ── Slide ──────────────────────────────────────────────────────────────────
 
 export function ConeSpaceDesktop(rc, ctx, interval) {
-  TextBox({text: TEXT, x: 50, y: 60, w: 400, size: '22px', align: 'left', lineHeight: '1.35'});
+  TextBox({text: TEXT, x: 50, y: 60, w: 400, size: '21px', align: 'left', lineHeight: '1.3'});
 
   // the plot and the list of screens share the right side, above BACK/NEXT
   const row = document.createElement('div');
