@@ -48,13 +48,15 @@ const slides = [
 ];
 ```
 
+**Sections:** `sections` in `color.js` lists the deck's four sections from the README plan (Physics and Biology, Perception, Color for Computers, Color Psychology), and each slide but the title has `section: n`. `SectionNav` in `components.js` draws them between BACK and NEXT as numbered rough.js circles joined by a sketchy line, the current one filled in. Picking one goes to its first slide; a section with no slides yet is greyed out. Desktop shows every section's name; phones show only the current one's, under the row.
+
 **Slide lifecycle** (`showSlide(i)`):
 1. Calls `setDimensions(width, height)` to update global `WIDTH`/`HEIGHT`
 2. Updates browser history via `history.replaceState` (named hash for non-title slides, clean pathname for slide 0)
 3. Calls `clearSandbox(interval)` — cancels any running animation, removes all `#sandbox` children
 4. Creates a new `<canvas>`, gets `ctx` and `rough.canvas(canvas)` instance, appends to `#sandbox`
 5. Calls `slides[i].desktop` or `slides[i].mobile` depending on viewport
-6. Adds navigation buttons (Begin on title; BACK/NEXT on all others)
+6. Adds navigation buttons (Begin on title; BACK/NEXT and the section navigator on all others)
 
 Each slide function signature: `(rc, ctx, interval)` where `rc` is a rough.js canvas, `ctx` is Canvas 2D context, `interval` is a mutable object `{ id }` for animation loops.
 
@@ -205,6 +207,7 @@ for (let px = 0; px <= w; px++) {
 
 The second to last slide: a 3D plot of color with one axis per cone (L right, S up, M in depth), drawn on its own canvas with plain 2D canvas math (no 3D library). It uses real Stockman & Sharpe 2° cone fundamentals at 5nm, each cone scaled to peak 1.
 
+- Drawn to match the rest of the deck: the box edges, axes and screen gamuts are rough.js lines (fixed seeds), and the solid has flat, three-step shading with no outline.
 - The solid of real colors is a lit mesh (`SOLID`), drawn on its own layer and laid over the plot see-through: side bands from black out to where each ray meets the walls of the box (closed by the purples), plus a cap on the walls from white out to the edge colors. It's convex, so only quads facing the camera are drawn (no depth buffer needed). Box edges and axes are drawn over it.
 - The spectral locus (equal energy of each wavelength) lies on the solid's side, so it's drawn as a dark line with colored dots only where that side faces you.
 - A list beside the plot (under it on phones) of common screen standards (`SCREENS`: sRGB, Adobe RGB, Display P3, Rec. 2020), all off at first. Each checked one shows its gamut as a dashed parallelepiped in its own line color and dash, sharing D65 white, as bright as the box allows, so they compare. Each lists what share of the drawn solid it fills by volume (sRGB about 10%, Rec. 2020 about 20%). These match what the plot shows; the usual flat-chart figures (u'v' area, sRGB about 38%) ignore brightness and confused readers.
