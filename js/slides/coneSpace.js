@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=49';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=49';
+import {TextBox} from '../components.js?v=50';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=50';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -168,25 +168,6 @@ const SOLID = (() => {
   return quads;
 })();
 
-
-// Every edge of the mesh, with the one or two quads on each side of it, for
-// finding the outline: an edge between a quad facing you and one facing
-// away is on the edge of the shape as you see it.
-const SOLID_EDGES = (() => {
-  const map = new Map();
-  const key = (p) => p.map(c => c.toFixed(6)).join(',');
-  SOLID.forEach((q, qi) => {
-    for (let j = 0; j < 4; j++) {
-      const a = q.pts[j], b = q.pts[(j + 1) % 4];
-      const ka = key(a), kb = key(b);
-      if (ka === kb) continue; // the bands meet in a point at black
-      const k = ka < kb ? ka + '|' + kb : kb + '|' + ka;
-      if (!map.has(k)) map.set(k, {a, b, quads: []});
-      map.get(k).quads.push(qi);
-    }
-  });
-  return Array.from(map.values());
-})();
 
 // ── Rotation ───────────────────────────────────────────────────────────────
 
@@ -501,21 +482,6 @@ export function makePlot(container, interval, phone, opts = {}) {
     ctx.drawImage(layer, 0, 0, width, height);
     ctx.globalAlpha = sceneAlpha;
 
-    // a bold ink outline round the shape, like the shapes on the other slides
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (const e of SOLID_EDGES) {
-      const out = e.quads.length === 1 ? front[e.quads[0]] : front[e.quads[0]] !== front[e.quads[1]];
-      if (!out) continue;
-      const pa = project(e.a), pb = project(e.b);
-      ctx.moveTo(pa[0], pa[1]);
-      ctx.lineTo(pb[0], pb[1]);
-    }
-    ctx.stroke();
-
     for (const scr of SCREENS) if (picked.has(scr)) drawScreen(scr);
 
     // the rim where the solid meets the walls
@@ -560,8 +526,8 @@ export function makePlot(container, interval, phone, opts = {}) {
     // the spectral locus, which runs along the side of the solid: a dark
     // line with a dot every 10nm, only where that side faces you
     const locus = LOCUS.map(pt => ({...pt, p: project(pt.lms)}));
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(20,20,20,0.85)';
+    ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.beginPath();
     for (let i = 0; i < locus.length - 1; i++) {
@@ -575,8 +541,8 @@ export function makePlot(container, interval, phone, opts = {}) {
     locus.forEach((pt, i) => {
       if (pt.nm % 10 !== 0 || !dotShown(i)) return;
       ctx.fillStyle = `rgb(${pt.rgb.join(',')})`;
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(pt.p[0], pt.p[1], dotR, 0, 2 * Math.PI);
       ctx.fill();

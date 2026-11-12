@@ -1,7 +1,7 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button} from './components.js?v=49';
-import {clearSandbox, setDimensions} from './utils.js?v=49';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, HorseshoeDesktop, HorseshoeMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=49';
+import {Button} from './components.js?v=50';
+import {clearSandbox, setDimensions} from './utils.js?v=50';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, HorseshoeDesktop, HorseshoeMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=50';
 
 let interval = {id: null};
 let slideIndex = 0;
