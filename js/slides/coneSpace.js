@@ -1,5 +1,6 @@
-import {TextBox} from '../components.js?v=48';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=48';
+import rough from 'https://unpkg.com/roughjs?module';
+import {TextBox} from '../components.js?v=49';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=49';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -168,6 +169,25 @@ const SOLID = (() => {
 })();
 
 
+// Every edge of the mesh, with the one or two quads on each side of it, for
+// finding the outline: an edge between a quad facing you and one facing
+// away is on the edge of the shape as you see it.
+const SOLID_EDGES = (() => {
+  const map = new Map();
+  const key = (p) => p.map(c => c.toFixed(6)).join(',');
+  SOLID.forEach((q, qi) => {
+    for (let j = 0; j < 4; j++) {
+      const a = q.pts[j], b = q.pts[(j + 1) % 4];
+      const ka = key(a), kb = key(b);
+      if (ka === kb) continue; // the bands meet in a point at black
+      const k = ka < kb ? ka + '|' + kb : kb + '|' + ka;
+      if (!map.has(k)) map.set(k, {a, b, quads: []});
+      map.get(k).quads.push(qi);
+    }
+  });
+  return Array.from(map.values());
+})();
+
 // ── Rotation ───────────────────────────────────────────────────────────────
 
 function matMul(a, b) {
@@ -248,6 +268,8 @@ export function makePlot(container, interval, phone, opts = {}) {
     : 'display:block;touch-action:none;cursor:grab;';
   wrap.appendChild(canvas);
   const ctx = canvas.getContext('2d');
+  // hand-drawn lines, like the rest of the slides
+  const rc = rough.canvas(canvas);
   // the solid is drawn on its own layer first, so it can be laid over the
   // rest see-through in one piece without the seams between quads showing
   const layer = document.createElement('canvas');
@@ -432,33 +454,34 @@ export function makePlot(container, interval, phone, opts = {}) {
       if (a & bit) continue;
       boxEdges.push({from: corners[a], to: corners[a | bit], axis: a === 0 ? axis : -1});
     }
+    // sketchy, with a fixed seed each so they don't jitter as it turns
     const drawEdges = () => {
-      for (const e of boxEdges) {
+      boxEdges.forEach((e, i) => {
         const pa = project(e.from), pb = project(e.to);
-        ctx.strokeStyle = e.axis >= 0 ? axisColors[e.axis] : '#ccc';
-        ctx.lineWidth = e.axis >= 0 ? 2.5 : 1;
-        ctx.beginPath();
-        ctx.moveTo(pa[0], pa[1]);
-        ctx.lineTo(pb[0], pb[1]);
-        ctx.stroke();
-      }
+        const axis = e.axis >= 0;
+        rc.line(pa[0], pa[1], pb[0], pb[1], {stroke: axis ? axisColors[e.axis] : '#aaa',
+          strokeWidth: axis ? 3 : 1.4, roughness: axis ? 1 : 0.8, bowing: 1, seed: i + 1});
+      });
     };
 
-    // the solid: only the quads facing you, shaded by a light from the upper
-    // left. It's drawn see-through so the screen's box inside shows.
+    // the solid: only the quads facing you, cartoon shaded (lit, plain or
+    // in shadow, from a light at the upper left). It's drawn see-through so
+    // the screen's box inside shows.
     const LIGHT = [-0.45, 0.65, 0.62];
     const sideFront = new Set(), capFront = new Set();
     const shown = [];
-    for (const q of SOLID) {
-      if (!facing(q)) continue;
+    const front = SOLID.map(facing);
+    SOLID.forEach((q, qi) => {
+      if (!front[qi]) return;
       if (q.side !== undefined) sideFront.add(q.side);
       else if (q.outer) capFront.add(q.cap);
       const n = view(q.normal);
-      const shade = 0.6 + 0.45 * Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+      const lit = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2];
+      const shade = lit > 0.55 ? 1.08 : lit > 0.1 ? 0.95 : 0.8;
       const pts = q.pts.map(project);
       shown.push({pts, depth: pts.reduce((d, p) => d + p[2], 0) / 4,
         color: `rgb(${q.rgb.map(c => Math.round(Math.min(255, c * shade))).join(',')})`});
-    }
+    });
     shown.sort((a, b) => a.depth - b.depth);
     lctx.clearRect(0, 0, width, height);
     lctx.lineJoin = 'round';
@@ -474,9 +497,24 @@ export function makePlot(container, interval, phone, opts = {}) {
       lctx.stroke();
     }
     // see-through, so the screens' colors show inside
-    ctx.globalAlpha = 0.45 * sceneAlpha;
+    ctx.globalAlpha = 0.5 * sceneAlpha;
     ctx.drawImage(layer, 0, 0, width, height);
     ctx.globalAlpha = sceneAlpha;
+
+    // a bold ink outline round the shape, like the shapes on the other slides
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const e of SOLID_EDGES) {
+      const out = e.quads.length === 1 ? front[e.quads[0]] : front[e.quads[0]] !== front[e.quads[1]];
+      if (!out) continue;
+      const pa = project(e.a), pb = project(e.b);
+      ctx.moveTo(pa[0], pa[1]);
+      ctx.lineTo(pb[0], pb[1]);
+    }
+    ctx.stroke();
 
     for (const scr of SCREENS) if (picked.has(scr)) drawScreen(scr);
 
@@ -522,8 +560,8 @@ export function makePlot(container, interval, phone, opts = {}) {
     // the spectral locus, which runs along the side of the solid: a dark
     // line with a dot every 10nm, only where that side faces you
     const locus = LOCUS.map(pt => ({...pt, p: project(pt.lms)}));
-    ctx.strokeStyle = 'rgba(20,20,20,0.85)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
     for (let i = 0; i < locus.length - 1; i++) {
@@ -532,13 +570,13 @@ export function makePlot(container, interval, phone, opts = {}) {
       ctx.lineTo(locus[i + 1].p[0], locus[i + 1].p[1]);
     }
     ctx.stroke();
-    const dotR = Math.max(2.5, side() / 130);
+    const dotR = Math.max(3, side() / 110);
     const dotShown = (i) => sideFront.has(i) || sideFront.has(i - 1);
     locus.forEach((pt, i) => {
       if (pt.nm % 10 !== 0 || !dotShown(i)) return;
       ctx.fillStyle = `rgb(${pt.rgb.join(',')})`;
-      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(pt.p[0], pt.p[1], dotR, 0, 2 * Math.PI);
       ctx.fill();
@@ -587,17 +625,10 @@ export function makePlot(container, interval, phone, opts = {}) {
   // with a dot of each mix at its corners
   function drawScreen(scr) {
     const pts = scr.corners.map(c => ({...c, p: project(c.lms)}));
-    ctx.save();
-    ctx.setLineDash(scr.dash);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = scr.line;
-    ctx.beginPath();
-    for (const [a, b] of GAMUT_EDGES) {
-      ctx.moveTo(pts[a].p[0], pts[a].p[1]);
-      ctx.lineTo(pts[b].p[0], pts[b].p[1]);
-    }
-    ctx.stroke();
-    ctx.restore();
+    GAMUT_EDGES.forEach(([a, b], i) => {
+      rc.line(pts[a].p[0], pts[a].p[1], pts[b].p[0], pts[b].p[1], {stroke: scr.line, strokeWidth: 2,
+        roughness: 0.8, bowing: 1, strokeLineDash: scr.dash, disableMultiStroke: true, seed: 20 + i});
+    });
     const r = Math.max(2.5, side() / 120);
     pts.slice(1).forEach(pt => {
       ctx.fillStyle = pt.color;
