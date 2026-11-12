@@ -1,7 +1,7 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button} from './components.js?v=48';
-import {clearSandbox, setDimensions} from './utils.js?v=48';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, HorseshoeDesktop, HorseshoeMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=48';
+import {Button} from './components.js?v=49';
+import {clearSandbox, setDimensions} from './utils.js?v=49';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, HorseshoeDesktop, HorseshoeMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=49';
 
 let interval = {id: null};
 let slideIndex = 0;
@@ -17,7 +17,25 @@ const slides = [
   { name: 'horseshoe',       desktop: HorseshoeDesktop,       mobile: HorseshoeMobile },
 ];
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", () => whenReady().then(init));
+
+// The handwritten font and the sketchy buttons and sliders arrive after the
+// page does. Wait for them (at most 2.5 seconds) before drawing the first
+// slide, so it never shows in a fallback font or with bare widgets.
+function whenReady() {
+  const fonts = document.fonts
+    ? Promise.all([document.fonts.load('20px Gaegu'), document.fonts.load('bold 20px Gaegu')])
+    : Promise.resolve();
+  const widgets = Promise.all(['wired-button', 'wired-slider'].map(n => customElements.whenDefined(n)));
+  const limit = new Promise(resolve => setTimeout(resolve, 2500));
+  return Promise.race([Promise.all([fonts, widgets]).catch(() => {}), limit]);
+}
+
+// Two frames so the slide and its widgets have laid out, then show it.
+function reveal() {
+  requestAnimationFrame(() => requestAnimationFrame(() =>
+    document.documentElement.classList.remove('loading')));
+}
 
 function getLayout() {
   const isMobile = window.matchMedia('(max-width: 480px)').matches;
@@ -35,6 +53,7 @@ function init() {
   const namedIndex = slides.findIndex(s => s.name === hash);
   slideIndex = namedIndex >= 0 ? namedIndex : 0;
   showSlide(slideIndex);
+  reveal();
 
   // Phones fire resize when the browser bars show or hide, which only changes
   // the height. Redrawing then makes the slide flash, so only redraw when the
