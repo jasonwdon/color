@@ -147,14 +147,9 @@ wired-button:hover {
   touch-action: manipulation;
 }
 
-.section-item:disabled,
-.section-item.current {
-  color: #222;
-  cursor: default;
-}
-
 .section-item:disabled {
   color: #bbb;
+  cursor: default;
 }
 
 .section-mark {
@@ -163,7 +158,7 @@ wired-button:hover {
   transition: transform 0.15s;
 }
 
-.section-item:not(:disabled):not(.current):hover .section-mark {
+.section-item:not(:disabled):hover .section-mark {
   transform: scale(1.12);
 }
 

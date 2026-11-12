@@ -89,7 +89,8 @@ export function RadioButton(config) {
 
 // The row of numbered circles between BACK and NEXT, one per section of the
 // deck, joined by a sketchy line. The current section's circle is filled in.
-// A section with no slides yet is greyed out and can't be picked. On desktop
+// Picking one goes to its first slide. A section with no slides yet is
+// greyed out and can't be picked. On desktop
 // each circle has its section's name under it; on phones there's only room
 // for the current section's name, under the row.
 //   sections: [{name, enabled}], current: index, onPick(index), phone: bool
@@ -144,7 +145,8 @@ export function SectionNav(config) {
       name.textContent = sec.name;
       item.appendChild(name);
     }
-    if (sec.enabled && i !== current) item.addEventListener('click', () => onPick(i));
+    // the current one goes back to the start of its section
+    if (sec.enabled) item.addEventListener('click', () => onPick(i));
     nav.appendChild(item);
   });
 
