@@ -271,3 +271,8 @@ wired-button:hover {
   from { opacity: 1; }
   to   { opacity: 0; }
 }
+
+/* hidden while the font and widgets load (see index.html's head), then faded in */
+#sandbox { transition: opacity 0.3s ease-in; }
+html.loading #sandbox { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { #sandbox { transition: none; } }
