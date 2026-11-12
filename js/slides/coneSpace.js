@@ -1,6 +1,6 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {TextBox} from '../components.js?v=50';
-import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=50';
+import {TextBox} from '../components.js?v=51';
+import {wavelengthToColor, onResize, mobileContentBottom, revealAfterFonts} from '../utils.js?v=51';
 
 // Every color is three numbers, how hard the L, M and S cones fire, so every
 // color is a point in a 3D box. This slide draws that box and lets you turn it.
@@ -52,13 +52,19 @@ const SCREENS = [
 // cone colors from the cones slide
 const L_COLOR = 'rgb(230,60,60)', M_COLOR = 'rgb(60,160,60)', S_COLOR = 'rgb(70,70,240)';
 
+// colored like the axes they name
+const LONG = `<b style='color:${L_COLOR}'>long</b>`;
+const MEDIUM = `<b style='color:${M_COLOR}'>medium</b>`;
+const SHORT = `<b style='color:${S_COLOR}'>short</b>`;
+
 const TEXT =
-  "Now back to physics and biology. We can graph the colors we can see on 3 axes, to show where " +
-  "each color sits based on how much each cone is stimulated.<br><br>" +
-  "Note that there's lots of empty space, because it's impossible to reach. Since the cones have " +
-  "overlapping ranges, it's impossible to stimulate one without stimulating the others.<br><br>" +
-  "Then we can trace the visible spectrum on the 3D shape as a line. Each straight line out from " +
-  "black is one color getting brighter.";
+  "Now back to physics and biology. Every color you see comes down to how hard your " +
+  `${LONG}, ${MEDIUM} and ${SHORT} cones are firing. That's 3 numbers, so every color ` +
+  "gets a spot in 3D.<br><br>" +
+  "But most of the box is empty. The cones overlap, so you can't fire one on its own. " +
+  "Those empty corners are colors no one can see.<br><br>" +
+  "The dark line is the rainbow, one wavelength at a time. Each straight line out from " +
+  "<b>black</b> is one color getting brighter.";
 
 // ── Geometry ───────────────────────────────────────────────────────────────
 
@@ -185,7 +191,7 @@ function rotY(a) {
 // ── Slide ──────────────────────────────────────────────────────────────────
 
 export function ConeSpaceDesktop(rc, ctx, interval) {
-  TextBox({text: TEXT, x: 50, y: 55, w: 400, size: '21px', align: 'left', lineHeight: '1.3'});
+  TextBox({text: TEXT, x: 50, y: 60, w: 400, size: '22px', align: 'left', lineHeight: '1.35'});
 
   // the plot and the list of screens share the right side, above BACK/NEXT
   const row = document.createElement('div');

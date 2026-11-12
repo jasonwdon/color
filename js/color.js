@@ -1,20 +1,30 @@
 import rough from 'https://unpkg.com/roughjs?module';
-import {Button} from './components.js?v=50';
-import {clearSandbox, setDimensions} from './utils.js?v=50';
-import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, HorseshoeDesktop, HorseshoeMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=50';
+import {Button, SectionNav} from './components.js?v=51';
+import {clearSandbox, setDimensions} from './utils.js?v=51';
+import {TitleDesktop, TitleMobile, RYBDesktop, RYBMobile, ElectromagneticDesktop, ElectromagneticMobile, ConesDesktop, ConesMobile, ConeSpaceDesktop, ConeSpaceMobile, HorseshoeDesktop, HorseshoeMobile, LightMixingDesktop, LightMixingMobile, PaintMixingDesktop, PaintMixingMobile} from './slides/AllSlides.js?v=51';
 
 let interval = {id: null};
 let slideIndex = 0;
 
+// The deck's four sections, from the plan in the README. Only the first has
+// slides so far; the others show in the section navigator greyed out.
+const sections = [
+  { name: 'Physics and Biology' },
+  { name: 'Perception' },
+  { name: 'Color for Computers' },
+  { name: 'Color Psychology' },
+];
+
+// section is the index into sections above; the title slide has none
 const slides = [
   { name: 'title',           desktop: TitleDesktop,           mobile: TitleMobile },
-  { name: 'ryb',             desktop: RYBDesktop,             mobile: RYBMobile },
-  { name: 'electromagnetic', desktop: ElectromagneticDesktop, mobile: ElectromagneticMobile },
-  { name: 'cones',           desktop: ConesDesktop,           mobile: ConesMobile },
-  { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile },
-  { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile },
-  { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile },
-  { name: 'horseshoe',       desktop: HorseshoeDesktop,       mobile: HorseshoeMobile },
+  { name: 'ryb',             desktop: RYBDesktop,             mobile: RYBMobile,             section: 0 },
+  { name: 'electromagnetic', desktop: ElectromagneticDesktop, mobile: ElectromagneticMobile, section: 0 },
+  { name: 'cones',           desktop: ConesDesktop,           mobile: ConesMobile,           section: 0 },
+  { name: 'light-mixing',    desktop: LightMixingDesktop,     mobile: LightMixingMobile,     section: 0 },
+  { name: 'paint-mixing',    desktop: PaintMixingDesktop,     mobile: PaintMixingMobile,     section: 0 },
+  { name: 'cone-space',      desktop: ConeSpaceDesktop,       mobile: ConeSpaceMobile,       section: 0 },
+  { name: 'horseshoe',       desktop: HorseshoeDesktop,       mobile: HorseshoeMobile,       section: 0 },
 ];
 
 document.addEventListener("DOMContentLoaded", init);
@@ -77,6 +87,15 @@ function showSlide(i) {
   } else {
     Button({text: "BACK", class: 'back-button', onClick: prevSlide})
     Button({text: "NEXT", class: 'next-button', onClick: nextSlide})
+    SectionNav({
+      sections: sections.map((sec, s) => ({...sec, enabled: slides.some(sl => sl.section === s)})),
+      current: slides[i].section,
+      phone: isMobile,
+      onPick: (s) => {
+        slideIndex = slides.findIndex(sl => sl.section === s);
+        showSlide(slideIndex);
+      },
+    });
   }
 }
 
